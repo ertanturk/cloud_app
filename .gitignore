@@ -1,0 +1,58 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Environment Variables and Secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+*.pem
+*.key
+*.pfx
+
+# Lint and Coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+nosetests.xml
+coverage.xml
+*.cover
+*.pyt
+
+# Build
+build/
+bdist.*/
+sdist/
+dist/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Logs and Database
+*.log
+logs/
+*.sqlite
+*.sqlite3
+*.db
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/

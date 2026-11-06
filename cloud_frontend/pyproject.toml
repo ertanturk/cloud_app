@@ -1,0 +1,20 @@
+[project]
+name = "cloud-frontend"
+version = "0.1.0"
+description = "Cloud Store Terminal User Interface (TUI)"
+authors = [{ name = "Ertan Tunç Türk", email = "turke@mef.edu.tr" }]
+requires-python = ">=3.12"
+dependencies = [
+    "httpx>=0.28.1",
+    "httpx-sse>=0.4.3",
+    "keyring>=25.7.0",
+    "qrcode>=8.2",
+    "textual>=8.2.8",
+]
+
+[project.scripts]
+cloud = "cloud_frontend.main:main"
+
+[build-system]
+requires = ["uv_build>=0.13.1,<0.14.0"]
+build-backend = "uv_build"
