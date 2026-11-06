@@ -29,4 +29,4 @@ jobs:
 
             - name: Run Dependency Audit
               run: |
-                  uv run pip-audit
+                  uv run --with pip-audit pip-audit
