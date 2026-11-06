@@ -1,0 +1,54 @@
+name: Release & Package TUI
+
+on:
+    push:
+        tags:
+            - "v*.*.*"
+
+permissions:
+    contents: write
+
+jobs:
+    build-and-release:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
+
+            - name: Install uv
+              uses: astral-sh/setup-uv@v3
+              with:
+                  version: "0.13.7"
+                  enable-cache: true
+
+            - name: Set up Python
+              uses: actions/setup-python@v7
+              with:
+                  python-version: "3.12"
+
+            - name: Install Dependencies
+              run: uv sync --all-packages
+
+            - name: Build TUI Binary
+              run: |
+                  uv run pyinstaller --onefile \
+                    --name cloud \
+                    --distpath build-dist \
+                    --entry-point cloud_frontend.main:main
+
+            - name: Build Python Package Distributions
+              run: |
+                  uv build --package cloud-frontend
+
+            - name: Create GitHub Release and Upload Assets
+              uses: softprops/action-gh-release@v3
+              with:
+                  files: |
+                      build-dist/cloud
+                      dist/*.whl
+                      dist/*.tar.gz
+                  generate_release_notes: true
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
