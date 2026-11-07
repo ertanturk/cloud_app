@@ -65,22 +65,22 @@
 
 ## Phase 3: Pydantic Schemas (Request / Response DTOs)
 
-- [ ] **`cloud_backend/src/cloud_backend/schemas/common.py`**
+- [x] **`cloud_backend/src/cloud_backend/schemas/common.py`**
     - `ErrorResponse` schema (`code`, `message`).
     - `PaginationParams` schema (`limit`, `offset`).
-- [ ] **`cloud_backend/src/cloud_backend/schemas/auth.py`**
+- [x] **`cloud_backend/src/cloud_backend/schemas/auth.py`**
     - `LoginRequest` (`username`, `password`, `totp_code`).
     - `LoginResponse` (`access_token`, `refresh_token`, `expires_in`, `user`).
     - `TotpSetupResponse` (`provisioning_uri`, `setup_token`).
     - `TotpConfirmRequest` (`setup_token`, `totp_code`).
     - `RefreshRequest` (`refresh_token`).
-- [ ] **`cloud_backend/src/cloud_backend/schemas/file.py`**
+- [x] **`cloud_backend/src/cloud_backend/schemas/file.py`**
     - `FileItemResponse` (`file_id`, `file_name`, `file_size_bytes`, `extension`, `uploaded_at`).
     - `StorageResponse` (`quota_bytes`, `used_bytes`, `reserved_bytes`, `available_bytes`).
-- [ ] **`cloud_backend/src/cloud_backend/schemas/upload.py`**
+- [x] **`cloud_backend/src/cloud_backend/schemas/upload.py`**
     - `UploadReservationRequest` (`file_name`, `file_size_bytes`).
     - `UploadReservationResponse` (`reservation_id`, `expires_at`).
-- [ ] **`cloud_backend/src/cloud_backend/schemas/admin.py`**
+- [x] **`cloud_backend/src/cloud_backend/schemas/admin.py`**
     - `UserCreateRequest` (`username`, `initial_password`).
     - `UserResponse` (`user_id`, `username`, `role`, `storage_quota_bytes`, `created_at`).
     - `QuotaUpdateRequest` (`quota_bytes`).
