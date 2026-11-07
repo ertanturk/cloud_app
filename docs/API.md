@@ -36,9 +36,9 @@ Request:
 
 ```json
 {
-  "username": "ertan",
-  "password": "user_password",
-  "totp_code": "123456"
+    "username": "ertan",
+    "password": "user_password",
+    "totp_code": "123456"
 }
 ```
 
@@ -99,7 +99,7 @@ Request:
 
 ```json
 {
-  "refresh_token": "current_refresh_token"
+    "refresh_token": "current_refresh_token"
 }
 ```
 
@@ -130,7 +130,7 @@ Request:
 
 ```json
 {
-  "refresh_token": "current_refresh_token"
+    "refresh_token": "current_refresh_token"
 }
 ```
 
@@ -176,10 +176,10 @@ Returns the authenticated user's active files.
 
 Query parameters:
 
-| Parameter | Default | Maximum |
-|---|---:|---:|
-| `limit` | 50 | 100 |
-| `offset` | 0 | No fixed maximum |
+| Parameter | Default |          Maximum |
+| --------- | ------: | ---------------: |
+| `limit`   |      50 |              100 |
+| `offset`  |       0 | No fixed maximum |
 
 Files are sorted by upload date, newest first.
 
@@ -233,8 +233,8 @@ Request:
 
 ```json
 {
-  "file_name": "document.pdf",
-  "file_size_bytes": 2500000
+    "file_name": "document.pdf",
+    "file_size_bytes": 2500000
 }
 ```
 
@@ -414,7 +414,7 @@ Request:
 
 ```json
 {
-  "quota_bytes": 20000000000
+    "quota_bytes": 20000000000
 }
 ```
 
@@ -455,10 +455,10 @@ Returns historical events from the Telemetry Database.
 
 Query parameters:
 
-| Parameter | Default | Maximum |
-|---|---:|---:|
-| `limit` | 50 | 100 |
-| `offset` | 0 | No fixed maximum |
+| Parameter | Default |          Maximum |
+| --------- | ------: | ---------------: |
+| `limit`   |      50 |              100 |
+| `offset`  |       0 | No fixed maximum |
 
 Events are sorted newest first.
 
@@ -535,12 +535,12 @@ This endpoint uses Server-Sent Events (SSE). It sends server updates to the admi
 
 ### Event Types
 
-| Event | Data |
-|---|---|
-| `system_metrics` | System metrics snapshot |
-| `application_metrics` | Application metrics snapshot |
-| `session` | Session created, updated, or ended |
-| `telemetry` | New telemetry event |
+| Event                 | Data                               |
+| --------------------- | ---------------------------------- |
+| `system_metrics`      | System metrics snapshot            |
+| `application_metrics` | Application metrics snapshot       |
+| `session`             | Session created, updated, or ended |
+| `telemetry`           | New telemetry event                |
 
 ### Connection Rules
 
@@ -583,29 +583,29 @@ JSON errors use this format:
 
 ```json
 {
-  "error": {
-    "code": "RESOURCE_NOT_FOUND",
-    "message": "The requested resource was not found."
-  }
+    "error": {
+        "code": "RESOURCE_NOT_FOUND",
+        "message": "The requested resource was not found."
+    }
 }
 ```
 
 ### 6.4 HTTP Status Codes
 
-| Status | Meaning |
-|---|---|
-| 200 | Request completed |
-| 201 | Resource created |
-| 204 | Request completed with no response body |
-| 400 | Invalid request |
-| 401 | Authentication failed or session expired |
-| 403 | Permission denied |
-| 404 | Resource not found |
-| 409 | Resource state conflict |
-| 413 | Request content is too large |
-| 429 | Too many requests |
-| 500 | Internal server error |
-| 503 | Service unavailable |
+| Status | Meaning                                  |
+| ------ | ---------------------------------------- |
+| 200    | Request completed                        |
+| 201    | Resource created                         |
+| 204    | Request completed with no response body  |
+| 400    | Invalid request                          |
+| 401    | Authentication failed or session expired |
+| 403    | Permission denied                        |
+| 404    | Resource not found                       |
+| 409    | Resource state conflict                  |
+| 413    | Request content is too large             |
+| 429    | Too many requests                        |
+| 500    | Internal server error                    |
+| 503    | Service unavailable                      |
 
 The server must not expose internal file paths, SQL errors, passwords, tokens, or secret values in error responses.
 
@@ -700,26 +700,26 @@ The current `DB.md` does not yet support every behavior defined in this API. Upd
 ### Core Database Changes
 
 1. **Sessions**
-   - Add `client_ip` so the admin can see the client address.
+    - Add `client_ip` so the admin can see the client address.
 
 2. **Files**
-   - Add `uploaded_at` for file-list sorting.
-   - Add `status` with at least `active` and `deleting`.
+    - Add `uploaded_at` for file-list sorting.
+    - Add `status` with at least `active` and `deleting`.
 
 3. **UploadReservations**
-   - Add `status` with `reserved`, `uploading`, and `completed`.
-   - Keep completed reservations for 24 hours.
-   - Keep the planned `file_id` and use it to return the previous result after a lost HTTP response.
-   - Add the time fields needed to distinguish reservation start expiry, upload activity, and completed-result retention.
-   - Do not remove a reservation after a recoverable upload failure. Return it to `reserved` after file cleanup succeeds.
+    - Add `status` with `reserved`, `uploading`, and `completed`.
+    - Keep completed reservations for 24 hours.
+    - Keep the planned `file_id` and use it to return the previous result after a lost HTTP response.
+    - Add the time fields needed to distinguish reservation start expiry, upload activity, and completed-result retention.
+    - Do not remove a reservation after a recoverable upload failure. Return it to `reserved` after file cleanup succeeds.
 
 4. **UserSecrets / TOTP enrollment**
-   - Add a clear enrollment state.
-   - Define how a pending TOTP secret is stored and confirmed.
-   - Define how a short-lived setup token is represented or validated.
+    - Add a clear enrollment state.
+    - Define how a pending TOTP secret is stored and confirmed.
+    - Define how a short-lived setup token is represented or validated.
 
 5. **Users**
-   - Add `created_at` if the admin user list must return account creation time.
+    - Add `created_at` if the admin user list must return account creation time.
 
 ### Telemetry Database
 

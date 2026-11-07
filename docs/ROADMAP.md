@@ -6,12 +6,12 @@
 
 ### 1.1 Environment & Settings
 
-- [ ] **`cloud_backend/src/cloud_backend/core/config.py`**
+- [x] **`cloud_backend/src/cloud_backend/core/config.py`**
     - Read `.env` variables using `pydantic-settings`.
     - Define `STORAGE_BASE_PATH`, `JWT_SECRET_KEY`, `CORE_DB_URL`, and `TELEMETRY_DB_URL`.
-- [ ] **`cloud_backend/src/cloud_backend/core/logging.py`**
+- [x] **`cloud_backend/src/cloud_backend/core/app_logging.py`**
     - Setup log format for standard output and application errors.
-- [ ] **`cloud_backend/src/cloud_backend/core/security.py`**
+- [x] **`cloud_backend/src/cloud_backend/core/security.py`**
     - Build Argon2id hash & verify helper (Version 1 parameters).
     - Build AES encryption/decryption helpers for TOTP secrets.
     - Build JWT creation and validation functions (HS256, 10-min expiration).

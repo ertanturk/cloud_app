@@ -133,29 +133,29 @@ The tables below use the listed SQL Server names and data types.
 
 #### USER (`dbo.Users`)
 
-| Column | SQL Server type | Null | Rules |
-|---|---|---:|---|
-| `user_id` | `INT IDENTITY(1,1)` | No | Primary key. SQL Server creates the value. |
-| `username` | `NVARCHAR(100)` | No | Must be unique. |
-| `password_hash` | `BINARY(32)` | No | Stores the Argon2id output. |
-| `password_hash_version` | `TINYINT` | No | Version `1` uses the settings in Section 7.1. |
-| `role` | `VARCHAR(20)` | No | Allowed values are `user` and `admin`. Default is `user`. |
-| `storage_quota_bytes` | `BIGINT` | No | User storage limit. Default is 10 GB (`10000000000` bytes). |
-| `created_at` | `DATETIME2(3)` | No | Account creation time in UTC. Default is `SYSUTCDATETIME()`. |
+| Column                  | SQL Server type     | Null | Rules                                                        |
+| ----------------------- | ------------------- | ---: | ------------------------------------------------------------ |
+| `user_id`               | `INT IDENTITY(1,1)` |   No | Primary key. SQL Server creates the value.                   |
+| `username`              | `NVARCHAR(100)`     |   No | Must be unique.                                              |
+| `password_hash`         | `BINARY(32)`        |   No | Stores the Argon2id output.                                  |
+| `password_hash_version` | `TINYINT`           |   No | Version `1` uses the settings in Section 7.1.                |
+| `role`                  | `VARCHAR(20)`       |   No | Allowed values are `user` and `admin`. Default is `user`.    |
+| `storage_quota_bytes`   | `BIGINT`            |   No | User storage limit. Default is 10 GB (`10000000000` bytes).  |
+| `created_at`            | `DATETIME2(3)`      |   No | Account creation time in UTC. Default is `SYSUTCDATETIME()`. |
 
 Only an admin can create users or change their quota. There is no public registration endpoint.
 
 #### USER_SECRETS (`dbo.UserSecrets`)
 
-| Column | SQL Server type | Null | Rules |
-|---|---|---:|---|
-| `user_id` | `INT` | No | Primary key and foreign key to `Users.user_id`. |
-| `password_salt` | `BINARY(16)` | No | A random 16-byte salt for the user's password. |
-| `encrypted_totp_secret` | `VARBINARY(512)` | Yes | Encrypted confirmed TOTP secret. `NULL` until setup is confirmed. |
-| `pending_totp_secret` | `VARBINARY(512)` | Yes | Encrypted TOTP secret during enrollment. Clear it after confirmation or expiry. |
-| `totp_setup_token_hash` | `BINARY(32)` | Yes | SHA-256 hash of the temporary setup token. Never store the raw token. |
-| `totp_setup_expires_at` | `DATETIME2(3)` | Yes | Expiry time of the temporary setup token in UTC. |
-| `totp_enabled` | `BIT` | No | Default is `0`. Set to `1` only after the first valid TOTP code is confirmed. |
+| Column                  | SQL Server type  | Null | Rules                                                                           |
+| ----------------------- | ---------------- | ---: | ------------------------------------------------------------------------------- |
+| `user_id`               | `INT`            |   No | Primary key and foreign key to `Users.user_id`.                                 |
+| `password_salt`         | `BINARY(16)`     |   No | A random 16-byte salt for the user's password.                                  |
+| `encrypted_totp_secret` | `VARBINARY(512)` |  Yes | Encrypted confirmed TOTP secret. `NULL` until setup is confirmed.               |
+| `pending_totp_secret`   | `VARBINARY(512)` |  Yes | Encrypted TOTP secret during enrollment. Clear it after confirmation or expiry. |
+| `totp_setup_token_hash` | `BINARY(32)`     |  Yes | SHA-256 hash of the temporary setup token. Never store the raw token.           |
+| `totp_setup_expires_at` | `DATETIME2(3)`   |  Yes | Expiry time of the temporary setup token in UTC.                                |
+| `totp_enabled`          | `BIT`            |   No | Default is `0`. Set to `1` only after the first valid TOTP code is confirmed.   |
 
 A new user cannot log in until TOTP setup is complete. The application must not treat a pending secret as an active TOTP secret.
 
@@ -165,14 +165,14 @@ The TOTP encryption key must stay outside the database. The application must pro
 
 #### SESSION (`dbo.Sessions`)
 
-| Column | SQL Server type | Null | Rules |
-|---|---|---:|---|
-| `session_id` | `INT IDENTITY(1,1)` | No | Primary key. SQL Server creates the value. |
-| `user_id` | `INT` | No | Foreign key to `Users.user_id`. |
-| `client_ip` | `VARCHAR(45)` | No | Client IPv4 or IPv6 address. |
-| `started_at` | `DATETIME2(3)` | No | Session start time in UTC. Default is `SYSUTCDATETIME()`. |
-| `ended_at` | `DATETIME2(3)` | Yes | Session end time in UTC. `NULL` means it has not been ended. |
-| `last_activity_at` | `DATETIME2(3)` | No | Time of the last user action or heartbeat in UTC. |
+| Column             | SQL Server type     | Null | Rules                                                        |
+| ------------------ | ------------------- | ---: | ------------------------------------------------------------ |
+| `session_id`       | `INT IDENTITY(1,1)` |   No | Primary key. SQL Server creates the value.                   |
+| `user_id`          | `INT`               |   No | Foreign key to `Users.user_id`.                              |
+| `client_ip`        | `VARCHAR(45)`       |   No | Client IPv4 or IPv6 address.                                 |
+| `started_at`       | `DATETIME2(3)`      |   No | Session start time in UTC. Default is `SYSUTCDATETIME()`.    |
+| `ended_at`         | `DATETIME2(3)`      |  Yes | Session end time in UTC. `NULL` means it has not been ended. |
+| `last_activity_at` | `DATETIME2(3)`      |   No | Time of the last user action or heartbeat in UTC.            |
 
 A session is active only when both conditions are true:
 
@@ -187,16 +187,16 @@ The admin API lists active sessions only. It returns `session_id`, `user_id`, us
 
 #### REFRESH_TOKEN (`dbo.RefreshTokens`)
 
-| Column | SQL Server type | Null | Rules |
-|---|---|---:|---|
-| `refresh_token_id` | `BIGINT IDENTITY(1,1)` | No | Primary key. SQL Server creates the value. |
-| `session_id` | `INT` | No | Foreign key to `Sessions.session_id`. |
-| `token_hash` | `BINARY(32)` | No | SHA-256 hash of the refresh token. Must be unique. |
-| `created_at` | `DATETIME2(3)` | No | Token creation time in UTC. |
-| `expires_at` | `DATETIME2(3)` | No | Token expiry time in UTC. |
-| `used_at` | `DATETIME2(3)` | Yes | Time when the token was used for refresh. |
-| `revoked_at` | `DATETIME2(3)` | Yes | Time when the token was revoked. |
-| `replaced_by_token_id` | `BIGINT` | Yes | ID of the new token that replaced this token. It must belong to the same session. |
+| Column                 | SQL Server type        | Null | Rules                                                                             |
+| ---------------------- | ---------------------- | ---: | --------------------------------------------------------------------------------- |
+| `refresh_token_id`     | `BIGINT IDENTITY(1,1)` |   No | Primary key. SQL Server creates the value.                                        |
+| `session_id`           | `INT`                  |   No | Foreign key to `Sessions.session_id`.                                             |
+| `token_hash`           | `BINARY(32)`           |   No | SHA-256 hash of the refresh token. Must be unique.                                |
+| `created_at`           | `DATETIME2(3)`         |   No | Token creation time in UTC.                                                       |
+| `expires_at`           | `DATETIME2(3)`         |   No | Token expiry time in UTC.                                                         |
+| `used_at`              | `DATETIME2(3)`         |  Yes | Time when the token was used for refresh.                                         |
+| `revoked_at`           | `DATETIME2(3)`         |  Yes | Time when the token was revoked.                                                  |
+| `replaced_by_token_id` | `BIGINT`               |  Yes | ID of the new token that replaced this token. It must belong to the same session. |
 
 The application stores only the token hash. The raw refresh token stays in the client's OS keyring.
 
@@ -206,18 +206,18 @@ If a used token is sent again, the application ends the related session and revo
 
 #### FILE (`dbo.Files`)
 
-| Column | SQL Server type | Null | Rules |
-|---|---|---:|---|
-| `file_id` | `BIGINT` | No | Primary key. The application gets the value from `dbo.FileIdSequence`. |
-| `user_id` | `INT` | No | Foreign key to `Users.user_id`. This is the file owner. |
-| `session_id` | `INT` | No | Upload session. It must belong to the same user as `user_id`. |
-| `original_file_name` | `NVARCHAR(255)` | No | Safe name for display. It is not the physical file name. |
-| `storage_path` | `VARCHAR(512)` | No | Unique path relative to the storage root. Use `/` as the path separator. |
-| `checksum_sha256` | `BINARY(32)` | No | SHA-256 checksum of the file content. |
-| `file_size_bytes` | `BIGINT` | No | File size in bytes. It must be zero or greater. |
-| `file_extension` | `VARCHAR(20)` | Yes | Lowercase extension without the dot. `NULL` means no extension. |
-| `status` | `VARCHAR(20)` | No | Allowed values are `active` and `deleting`. Default is `active`. |
-| `uploaded_at` | `DATETIME2(3)` | No | Time when the upload was completed in UTC. |
+| Column               | SQL Server type | Null | Rules                                                                    |
+| -------------------- | --------------- | ---: | ------------------------------------------------------------------------ |
+| `file_id`            | `BIGINT`        |   No | Primary key. The application gets the value from `dbo.FileIdSequence`.   |
+| `user_id`            | `INT`           |   No | Foreign key to `Users.user_id`. This is the file owner.                  |
+| `session_id`         | `INT`           |   No | Upload session. It must belong to the same user as `user_id`.            |
+| `original_file_name` | `NVARCHAR(255)` |   No | Safe name for display. It is not the physical file name.                 |
+| `storage_path`       | `VARCHAR(512)`  |   No | Unique path relative to the storage root. Use `/` as the path separator. |
+| `checksum_sha256`    | `BINARY(32)`    |   No | SHA-256 checksum of the file content.                                    |
+| `file_size_bytes`    | `BIGINT`        |   No | File size in bytes. It must be zero or greater.                          |
+| `file_extension`     | `VARCHAR(20)`   |  Yes | Lowercase extension without the dot. `NULL` means no extension.          |
+| `status`             | `VARCHAR(20)`   |   No | Allowed values are `active` and `deleting`. Default is `active`.         |
+| `uploaded_at`        | `DATETIME2(3)`  |   No | Time when the upload was completed in UTC.                               |
 
 Only files with status `active` can be downloaded. The API must not start a new download for a file with status `deleting`.
 
@@ -227,27 +227,27 @@ The `file_id` uses a SQL Server sequence. The application needs the ID before it
 
 #### UPLOAD_RESERVATION (`dbo.UploadReservations`)
 
-| Column | SQL Server type | Null | Rules |
-|---|---|---:|---|
-| `reservation_id` | `BIGINT IDENTITY(1,1)` | No | Primary key. SQL Server creates the value. |
-| `file_id` | `BIGINT` | No | Planned file ID from `dbo.FileIdSequence`. Must be unique. It has no foreign key to `Files`. |
-| `user_id` | `INT` | No | Foreign key to `Users.user_id`. |
-| `session_id` | `INT` | No | Upload session. It must belong to the same user as `user_id`. |
-| `reserved_bytes` | `BIGINT` | No | Expected complete file size. It must be zero or greater. |
-| `status` | `VARCHAR(20)` | No | Allowed values are `reserved`, `uploading`, and `completed`. |
-| `created_at` | `DATETIME2(3)` | No | Reservation time in UTC. |
-| `upload_started_at` | `DATETIME2(3)` | Yes | Time when the content upload started. |
-| `last_activity_at` | `DATETIME2(3)` | Yes | Time when the server last received upload data. |
-| `expires_at` | `DATETIME2(3)` | No | Expiry time for the current reservation state. |
-| `completed_at` | `DATETIME2(3)` | Yes | Time when the upload completed in UTC. |
+| Column              | SQL Server type        | Null | Rules                                                                                        |
+| ------------------- | ---------------------- | ---: | -------------------------------------------------------------------------------------------- |
+| `reservation_id`    | `BIGINT IDENTITY(1,1)` |   No | Primary key. SQL Server creates the value.                                                   |
+| `file_id`           | `BIGINT`               |   No | Planned file ID from `dbo.FileIdSequence`. Must be unique. It has no foreign key to `Files`. |
+| `user_id`           | `INT`                  |   No | Foreign key to `Users.user_id`.                                                              |
+| `session_id`        | `INT`                  |   No | Upload session. It must belong to the same user as `user_id`.                                |
+| `reserved_bytes`    | `BIGINT`               |   No | Expected complete file size. It must be zero or greater.                                     |
+| `status`            | `VARCHAR(20)`          |   No | Allowed values are `reserved`, `uploading`, and `completed`.                                 |
+| `created_at`        | `DATETIME2(3)`         |   No | Reservation time in UTC.                                                                     |
+| `upload_started_at` | `DATETIME2(3)`         |  Yes | Time when the content upload started.                                                        |
+| `last_activity_at`  | `DATETIME2(3)`         |  Yes | Time when the server last received upload data.                                              |
+| `expires_at`        | `DATETIME2(3)`         |   No | Expiry time for the current reservation state.                                               |
+| `completed_at`      | `DATETIME2(3)`         |  Yes | Time when the upload completed in UTC.                                                       |
 
 Reservation states:
 
-| State | Meaning | Quota |
-|---|---|---|
-| `reserved` | Space is reserved. Content upload has not started, or a failed upload is ready to retry. | Counts |
-| `uploading` | The server is receiving file content. | Counts |
-| `completed` | The file and its metadata were saved successfully. | Does not count; the file row counts instead. |
+| State       | Meaning                                                                                  | Quota                                        |
+| ----------- | ---------------------------------------------------------------------------------------- | -------------------------------------------- |
+| `reserved`  | Space is reserved. Content upload has not started, or a failed upload is ready to retry. | Counts                                       |
+| `uploading` | The server is receiving file content.                                                    | Counts                                       |
+| `completed` | The file and its metadata were saved successfully.                                       | Does not count; the file row counts instead. |
 
 Reservation timing rules:
 
@@ -280,24 +280,24 @@ SELECT NEXT VALUE FOR dbo.FileIdSequence;
 
 #### TELEMETRY (`dbo.Telemetry`)
 
-| Column | SQL Server type | Null | Rules |
-|---|---|---:|---|
-| `event_id` | `BIGINT IDENTITY(1,1)` | No | Primary key. SQL Server creates the value. |
-| `user_id` | `INT` | Yes | Logical link to `Users.user_id`. No foreign key. |
-| `session_id` | `INT` | Yes | Logical link to `Sessions.session_id`. No foreign key. |
-| `client_ip` | `VARCHAR(45)` | No | Stores IPv4 or IPv6 text. |
-| `event_type_id` | `INT` | No | Foreign key to `TelemetryEvents.event_type_id`. |
-| `telemetry_data` | `NVARCHAR(MAX)` | Yes | Optional JSON event data. Must not contain secrets or tokens. |
-| `event_time` | `DATETIME2(3)` | No | Event time in UTC. Default is `SYSUTCDATETIME()`. |
+| Column           | SQL Server type        | Null | Rules                                                         |
+| ---------------- | ---------------------- | ---: | ------------------------------------------------------------- |
+| `event_id`       | `BIGINT IDENTITY(1,1)` |   No | Primary key. SQL Server creates the value.                    |
+| `user_id`        | `INT`                  |  Yes | Logical link to `Users.user_id`. No foreign key.              |
+| `session_id`     | `INT`                  |  Yes | Logical link to `Sessions.session_id`. No foreign key.        |
+| `client_ip`      | `VARCHAR(45)`          |   No | Stores IPv4 or IPv6 text.                                     |
+| `event_type_id`  | `INT`                  |   No | Foreign key to `TelemetryEvents.event_type_id`.               |
+| `telemetry_data` | `NVARCHAR(MAX)`        |  Yes | Optional JSON event data. Must not contain secrets or tokens. |
+| `event_time`     | `DATETIME2(3)`         |   No | Event time in UTC. Default is `SYSUTCDATETIME()`.             |
 
 SQL Server stores JSON as text. The application must check JSON data before it stores it.
 
 #### TELEMETRY_EVENT (`dbo.TelemetryEvents`)
 
-| Column | SQL Server type | Null | Rules |
-|---|---|---:|---|
-| `event_type_id` | `INT` | No | Primary key. Values are set by a seed script. |
-| `event_type` | `VARCHAR(50)` | No | Must be unique. |
+| Column          | SQL Server type | Null | Rules                                         |
+| --------------- | --------------- | ---: | --------------------------------------------- |
+| `event_type_id` | `INT`           |   No | Primary key. Values are set by a seed script. |
+| `event_type`    | `VARCHAR(50)`   |   No | Must be unique.                               |
 
 The seed data must include these event types:
 
@@ -589,14 +589,14 @@ The application must follow these rules:
 
 Version `1` uses these Argon2id settings:
 
-| Setting | Value |
-|---|---:|
-| Algorithm | Argon2id |
-| Memory cost | 19456 KiB |
-| Iterations | 2 |
-| Parallelism | 1 |
-| Salt length | 16 bytes |
-| Output length | 32 bytes |
+| Setting       |     Value |
+| ------------- | --------: |
+| Algorithm     |  Argon2id |
+| Memory cost   | 19456 KiB |
+| Iterations    |         2 |
+| Parallelism   |         1 |
+| Salt length   |  16 bytes |
+| Output length |  32 bytes |
 
 When the application changes the Argon2id settings, it must use a new version number. It must keep support for old versions until old password hashes are updated.
 
@@ -659,21 +659,21 @@ On logout or session expiry, the application must set `Sessions.ended_at` and se
 
 Version `1` uses these Argon2id settings:
 
-| Setting | Value |
-|---|---:|
-| Algorithm | Argon2id |
-| Memory cost | 19456 KiB |
-| Iterations | 2 |
-| Parallelism | 1 |
-| Salt length | 16 bytes |
-| Output length | 32 bytes |
+| Setting       |     Value |
+| ------------- | --------: |
+| Algorithm     |  Argon2id |
+| Memory cost   | 19456 KiB |
+| Iterations    |         2 |
+| Parallelism   |         1 |
+| Salt length   |  16 bytes |
+| Output length |  32 bytes |
 
 ### 7.2 Token Parameters
 
-| Token | Format | Lifetime | Storage |
-|---|---|---|---|
-| Access token | JWT, HS256 | 10 minutes | TUI memory only |
-| Refresh token | Random 32-byte opaque token | Up to 30 days | OS keyring on client; SHA-256 hash in Core Database |
+| Token            | Format                         | Lifetime      | Storage                                                 |
+| ---------------- | ------------------------------ | ------------- | ------------------------------------------------------- |
+| Access token     | JWT, HS256                     | 10 minutes    | TUI memory only                                         |
+| Refresh token    | Random 32-byte opaque token    | Up to 30 days | OS keyring on client; SHA-256 hash in Core Database     |
 | TOTP setup token | Temporary single-purpose token | Has an expiry | Raw token held by client; SHA-256 hash in Core Database |
 
 ## 8. Index Strategy
@@ -712,20 +712,20 @@ SQL Server does not create an index for every foreign key by itself. The indexes
 
 - **USER**(**user_id**, username, password_hash, password_hash_version, role, storage_quota_bytes, created_at)
 - **USER_SECRETS**(**_user_id_**, password_salt, encrypted_totp_secret, pending_totp_secret, totp_setup_token_hash, totp_setup_expires_at, totp_enabled)
-  - References: `USER(user_id)`
+    - References: `USER(user_id)`
 - **SESSION**(**session_id**, _user_id_, client_ip, started_at, ended_at, last_activity_at)
-  - References: `USER(user_id)`
+    - References: `USER(user_id)`
 - **REFRESH_TOKEN**(**refresh_token_id**, _session_id_, token_hash, created_at, expires_at, used_at, revoked_at, replaced_by_token_id)
-  - References: `SESSION(session_id)` and `REFRESH_TOKEN(session_id, refresh_token_id)`
+    - References: `SESSION(session_id)` and `REFRESH_TOKEN(session_id, refresh_token_id)`
 - **FILE**(**file_id**, _user_id_, _session_id_, original_file_name, storage_path, checksum_sha256, file_size_bytes, file_extension, status, uploaded_at)
-  - References: `USER(user_id)` and `SESSION(user_id, session_id)`
+    - References: `USER(user_id)` and `SESSION(user_id, session_id)`
 - **UPLOAD_RESERVATION**(**reservation_id**, file_id, _user_id_, _session_id_, reserved_bytes, status, created_at, upload_started_at, last_activity_at, expires_at, completed_at)
-  - References: `USER(user_id)` and `SESSION(user_id, session_id)`
+    - References: `USER(user_id)` and `SESSION(user_id, session_id)`
 
 ### Telemetry Database
 
 - **TELEMETRY**(**event_id**, user_id, session_id, client_ip, _event_type_id_, telemetry_data, event_time)
-  - References: `TELEMETRY_EVENT(event_type_id)`
+    - References: `TELEMETRY_EVENT(event_type_id)`
 - **TELEMETRY_EVENT**(**event_type_id**, event_type)
 
 `TELEMETRY.user_id` and `TELEMETRY.session_id` are logical links to the Core Database. They do not have foreign keys.
