@@ -35,25 +35,29 @@
 
 ## Phase 2: Database Repositories (Data Layer)
 
-- [ ] **`cloud_backend/src/cloud_backend/db/repositories/user_repo.py`**
+- [x] **`cloud_backend/src/cloud_backend/db/repositories/user_repo.py`**
     - Find user by username or user ID.
     - Lock user row (`UPDLOCK`, `HOLDLOCK`) for quota update.
     - Create user and update user quota.
-- [ ] **`cloud_backend/src/cloud_backend/db/repositories/session_repo.py`**
+- [x] **`cloud_backend/src/cloud_backend/db/repositories/session_repo.py`**
     - Create active session.
     - Update `last_activity_at`.
     - End active session (`ended_at`).
     - List active sessions for admin.
-- [ ] **`cloud_backend/src/cloud_backend/db/repositories/file_repo.py`**
+- [x] **`cloud_backend/src/cloud_backend/db/repositories/refresh_token_repo.py`**
+    - Create refresh token record in `dbo.RefreshTokens`.
+    - Rotate refresh token.
+    - Revoke refresh token.
+- [x] **`cloud_backend/src/cloud_backend/db/repositories/file_repo.py`**
     - Generate next ID from sequence `dbo.FileIdSequence`.
     - Create file record in `dbo.Files`.
     - List user active files.
     - Update file status to `deleting` and delete record.
-- [ ] **`cloud_backend/src/cloud_backend/db/repositories/reservation_repo.py`**
+- [x] **`cloud_backend/src/cloud_backend/db/repositories/reservation_repo.py`**
     - Create reservation row (`reserved`).
     - Update state (`uploading`, `completed`).
     - Find active reservations to calculate reserved quota.
-- [ ] **`cloud_backend/src/cloud_backend/db/repositories/telemetry_repo.py`**
+- [x] **`cloud_backend/src/cloud_backend/db/repositories/telemetry_repo.py`**
     - Insert new telemetry event.
     - Query telemetry events with pagination and filters.
 
