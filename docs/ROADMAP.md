@@ -18,16 +18,16 @@
 
 ### 1.2 Database Connection & Models
 
-- [ ] **`cloud_backend/src/cloud_backend/db/connection.py`**
+- [x] **`cloud_backend/src/cloud_backend/db/connection.py`**
     - Setup SQLAlchemy engine pools for Core DB and Telemetry DB.
-- [ ] **`cloud_backend/src/cloud_backend/db/models/core.py`**
+- [x] **`cloud_backend/src/cloud_backend/db/models/core.py`**
     - Create `Users` table model.
     - Create `UserSecrets` table model.
     - Create `Sessions` table model.
     - Create `RefreshTokens` table model.
     - Create `Files` table model.
     - Create `UploadReservations` table model.
-- [ ] **`cloud_backend/src/cloud_backend/db/models/telemetry.py`**
+- [x] **`cloud_backend/src/cloud_backend/db/models/telemetry.py`**
     - Create `TelemetryEvents` table model.
     - Create `Telemetry` table model (nullable user_id, session_id).
 
