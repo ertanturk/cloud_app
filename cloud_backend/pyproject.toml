@@ -6,6 +6,7 @@ authors = [{ name = "Ertan Tunç Türk", email = "turke@mef.edu.tr" }]
 requires-python = ">=3.12"
 dependencies = [
     "argon2-cffi>=25.1.0",
+    "alembic>=1.15.0",
     "cryptography>=50.0.2",
     "fastapi>=0.162.0",
     "psutil>=7.2.2",

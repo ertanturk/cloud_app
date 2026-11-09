@@ -13,6 +13,8 @@ wheels/
 .env
 .env.local
 .env.*.local
+.env.bak
+.env.*.bak
 !.env.example
 *.pem
 *.key
@@ -50,6 +52,8 @@ logs/
 *.db
 
 # Windows
+.cloudstore-backend.pid
+.cloudstore-*.lock
 Thumbs.db
 Thumbs.db:encryptable
 ehthumbs.db
