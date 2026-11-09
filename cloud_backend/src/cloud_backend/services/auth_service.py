@@ -1,3 +1,5 @@
+"""Service handling user authentication and session management."""
+
 import hashlib
 import secrets
 from datetime import UTC, datetime, timedelta

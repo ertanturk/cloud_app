@@ -97,19 +97,19 @@
     - Validate password & TOTP code.
     - Rotate refresh token in single database transaction.
     - Detect token reuse (close session & revoke all tokens).
-- [ ] **`cloud_backend/src/cloud_backend/services/storage_service.py`**
+- [x] **`cloud_backend/src/cloud_backend/services/storage_service.py`**
     - Verify storage root directory safety (prevent path traversal).
     - Generate physical path: `{user_id}/{file_id}.{ext}`.
-- [ ] **`cloud_backend/src/cloud_backend/services/upload_service.py`**
+- [x] **`cloud_backend/src/cloud_backend/services/upload_service.py`**
     - Check available user quota.
     - Stream binary upload to `.tmp/{reservation_id}.part`.
     - Verify actual size & calculate SHA-256 checksum during streaming.
     - Move temp file to storage root and complete reservation.
-- [ ] **`cloud_backend/src/cloud_backend/services/file_service.py`**
+- [x] **`cloud_backend/src/cloud_backend/services/file_service.py`**
     - List files logic.
     - Download file streaming logic.
     - Delete file logic (change state to `deleting`, remove disk file, remove DB row).
-- [ ] **`cloud_backend/src/cloud_backend/services/metrics_service.py`**
+- [x] **`cloud_backend/src/cloud_backend/services/metrics_service.py`**
     - Read live CPU, RAM, Disk, Network speeds using `psutil`.
     - Calculate live application metrics from database.
 

@@ -62,6 +62,15 @@ class FileRepository:
             self.db.rollback()
             raise
 
+    def list_active_files_by_user(self, user_id: int) -> list[Files]:
+        """Retrieves all active files belonging to a user ordered by uploaded_at descending."""
+        stmt = (
+            select(Files)
+            .where(Files.user_id == user_id, Files.status == "active")
+            .order_by(Files.uploaded_at.desc())
+        )
+        return list(self.db.scalars(stmt).all())
+
     def get_active_file(self, file_id: int, user_id: int) -> Files | None:
         """Retrieves an active file belonging to the specified user."""
         stmt = select(Files).where(
