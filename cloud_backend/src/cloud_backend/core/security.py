@@ -4,12 +4,12 @@ Security utilities for the cloud backend, including password hashing and JWT tok
 
 import base64
 import os
+import secrets
 from datetime import UTC, datetime, timedelta
 from functools import lru_cache
 
 import jwt
-from argon2 import PasswordHasher
-from argon2.exceptions import VerifyMismatchError
+from argon2 import Type, low_level
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 
@@ -30,39 +30,43 @@ _ALGORITHM: str = "HS256"
 _EXPIRATION_MINUTES: int = 10
 
 
-@lru_cache(maxsize=1)
-def _get_ph() -> PasswordHasher:
+def hash_password(password: str) -> tuple[bytes, bytes]:
     """
-    Returns a cached instance of PasswordHasher.
+    Hashes a password using Argon2id with a cryptographically secure 16-byte salt.
+
+    Returns:
+        tuple[bytes, bytes]: (password_hash [32 bytes], password_salt [16 bytes])
     """
-    return PasswordHasher(
+    salt: bytes = os.urandom(_SALT_LEN_BYTE)
+    raw_hash: bytes = low_level.hash_secret_raw(
+        secret=password.encode("utf-8"),
+        salt=salt,
+        time_cost=_ITERATIONS,
         memory_cost=_MEMORY_COST_KIB,
         parallelism=_PARALLELISM,
-        salt_len=_SALT_LEN_BYTE,
         hash_len=_HASH_LEN_BYTE,
-        time_cost=_ITERATIONS,
+        type=Type.ID,
     )
+    return raw_hash, salt
 
 
-def hash_password(password: str) -> str:
+def verify_password(password: str, salt: bytes, expected_hash: bytes) -> bool:
     """
-    Hashes the given password using the cached PasswordHasher instance.
+    Verifies a plain-text password against the stored raw salt and hash digest.
+    Uses constant-time byte comparison to prevent timing side-channel attacks.
     """
-    ph = _get_ph()
-    hashed: str = ph.hash(password)
-    return hashed
-
-
-def verify_password(password: str, hashed: str) -> bool:
-    """
-    Verifies the given password against the hashed password.
-    Safe against VerifyMismatchError.
-    """
-    ph = _get_ph()
     try:
-        ph.verify(hashed, password)
-        return True
-    except VerifyMismatchError:
+        calculated_hash: bytes = low_level.hash_secret_raw(
+            secret=password.encode("utf-8"),
+            salt=salt,
+            time_cost=_ITERATIONS,
+            memory_cost=_MEMORY_COST_KIB,
+            parallelism=_PARALLELISM,
+            hash_len=_HASH_LEN_BYTE,
+            type=Type.ID,
+        )
+        return secrets.compare_digest(calculated_hash, expected_hash)
+    except Exception:  # noqa
         return False
 
 

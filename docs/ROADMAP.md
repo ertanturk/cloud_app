@@ -93,7 +93,7 @@
 
 ## Phase 4: Backend Business Logic Services
 
-- [ ] **`cloud_backend/src/cloud_backend/services/auth_service.py`**
+- [x] **`cloud_backend/src/cloud_backend/services/auth_service.py`**
     - Validate password & TOTP code.
     - Rotate refresh token in single database transaction.
     - Detect token reuse (close session & revoke all tokens).

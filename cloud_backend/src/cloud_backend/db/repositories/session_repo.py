@@ -14,6 +14,11 @@ class SessionRepository:
     def __init__(self, db: Session) -> None:
         self.db = db
 
+    def get_session(self, session_id: int) -> Sessions | None:
+        """Get the session with the given ID, if it exists."""
+        stmt = select(Sessions).where(Sessions.session_id == session_id)
+        return self.db.scalar(stmt)
+
     def create_session(self, user_id: int, client_ip: str) -> Sessions:
         """Create a new session for the given user and client IP."""
         try:

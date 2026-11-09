@@ -26,6 +26,13 @@ class UserRepository:
         stmt = select(Users).where(Users.user_id == user_id)
         return self.db.scalar(stmt)
 
+    def get_by_setup_token(self, totp_setup_token_hash: bytes) -> UserSecrets | None:
+        """Finds a UserSecrets by their setup token hash."""
+        stmt = select(UserSecrets).where(
+            UserSecrets.totp_setup_token_hash == totp_setup_token_hash
+        )
+        return self.db.scalar(stmt)
+
     def get_user_secrets(self, user_id: int) -> UserSecrets | None:
         """Finds a user's secrets record by user_id."""
         stmt = select(UserSecrets).where(UserSecrets.user_id == user_id)
