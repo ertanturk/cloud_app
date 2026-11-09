@@ -5,7 +5,10 @@ from datetime import UTC, datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from cloud_backend.core.app_logging import ProjectLogger
 from cloud_backend.db.models.core import RefreshTokens
+
+logger = ProjectLogger.get_logger(__name__)
 
 
 class RefreshTokenRepository:
@@ -29,6 +32,7 @@ class RefreshTokenRepository:
             self.db.refresh(token)
             return token
         except Exception:
+            logger.exception("Failed to create refresh token record")
             self.db.rollback()
             raise
 
@@ -66,6 +70,7 @@ class RefreshTokenRepository:
             self.db.refresh(new_token)
             return new_token
         except Exception:
+            logger.exception("Failed to rotate refresh token")
             self.db.rollback()
             raise
 
@@ -84,5 +89,8 @@ class RefreshTokenRepository:
 
             self.db.commit()
         except Exception:
+            logger.exception(
+                "Failed to revoke refresh tokens for session_id=%s", session_id
+            )
             self.db.rollback()
             raise

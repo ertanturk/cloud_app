@@ -5,7 +5,10 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from cloud_backend.core.app_logging import ProjectLogger
 from cloud_backend.db.models.core import Sessions
+
+logger = ProjectLogger.get_logger(__name__)
 
 
 class SessionRepository:
@@ -34,6 +37,7 @@ class SessionRepository:
             self.db.refresh(new_session)
             return new_session
         except Exception:
+            logger.exception("Failed to create session for user_id=%s", user_id)
             self.db.rollback()
             raise
 
@@ -66,6 +70,9 @@ class SessionRepository:
             self.db.refresh(session)
             return session
         except Exception:
+            logger.exception(
+                "Failed to update session activity for session_id=%s", session_id
+            )
             self.db.rollback()
             raise
 
@@ -87,6 +94,7 @@ class SessionRepository:
             self.db.refresh(session)
             return session
         except Exception:
+            logger.exception("Failed to end session_id=%s", session_id)
             self.db.rollback()
             raise
 

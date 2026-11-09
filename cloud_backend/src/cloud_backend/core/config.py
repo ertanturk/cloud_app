@@ -13,25 +13,22 @@ ENV_FILE_PATH = BASE_DIR / ".env"
 
 
 class Config(BaseSettings):
-    """
-    Application configuration class.
-    """
+    """Application configuration loaded from environment variables."""
 
-    STORAGE_BASE_PATH: str
-    JWT_SECRET_KEY: SecretStr = Field(..., min_length=32, max_length=32)
+    STORAGE_BASE_PATH: str = Field(default=r"D:\Storage")
+    JWT_SECRET_KEY: SecretStr = Field(..., min_length=32)
     CORE_DB_URL: SecretStr
     TELEMETRY_DB_URL: SecretStr
-    LOG_FILE_PATH: str
+    LOG_FILE_PATH: str = "cloud_backend.log"
 
-    model_config: SettingsConfigDict = SettingsConfigDict(
+    model_config = SettingsConfigDict(
         env_file=ENV_FILE_PATH,
         env_file_encoding="utf-8",
+        extra="ignore",
     )
 
 
-@lru_cache
+@lru_cache(maxsize=1)
 def get_config() -> Config:
-    """
-    Returns the application configuration.
-    """
+    """Return the process-wide validated configuration."""
     return Config()

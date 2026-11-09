@@ -27,6 +27,12 @@ class LoginResponse(BaseModel):
     user: UserResponse
 
 
+class TotpSetupRequest(BaseModel):
+    username: str
+    password: str
+    client_ip: str
+
+
 class TotpSetupResponse(BaseModel):
     provisioning_uri: str
     setup_token: str
@@ -38,4 +44,19 @@ class TotpConfirmRequest(BaseModel):
 
 
 class RefreshRequest(BaseModel):
+    raw_refresh_token: str
+
+
+class RefreshResponse(BaseModel):
+    access_token: str
     refresh_token: str
+    token_type: str = "Bearer"
+    expires_in: int = 600
+
+
+class LogoutRequest(BaseModel):
+    raw_refresh_token: str
+
+
+class HeartbeatRequest(BaseModel):
+    raw_refresh_token: str

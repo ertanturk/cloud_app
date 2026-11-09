@@ -14,13 +14,23 @@ from cloud_backend.core.config import get_config
 logger = ProjectLogger.get_logger(__name__)
 config = get_config()
 
+
+def _engine_options(url: str) -> dict[str, object]:
+    """Use pooling options only for database dialects that support them."""
+    if url.startswith("sqlite"):
+        return {"pool_pre_ping": True}
+    return {"pool_size": 10, "max_overflow": 20, "pool_pre_ping": True}
+
+
+def _create_engine(url: str):
+    engine = create_engine(url, **_engine_options(url))
+    if url.startswith("sqlite"):
+        return engine.execution_options(schema_translate_map={"dbo": None})
+    return engine
+
+
 # Core Database Engine & Connection Pool Configuration
-core_engine = create_engine(
-    config.CORE_DB_URL.get_secret_value(),
-    pool_size=10,
-    max_overflow=20,
-    pool_pre_ping=True,
-)
+core_engine = _create_engine(config.CORE_DB_URL.get_secret_value())
 
 # Core Session Factory
 CoreSessionLocal = sessionmaker(
@@ -30,12 +40,7 @@ CoreSessionLocal = sessionmaker(
 )
 
 # Telemetry Database Engine & Connection Pool Configuration
-telemetry_engine = create_engine(
-    config.TELEMETRY_DB_URL.get_secret_value(),
-    pool_size=10,
-    max_overflow=20,
-    pool_pre_ping=True,
-)
+telemetry_engine = _create_engine(config.TELEMETRY_DB_URL.get_secret_value())
 
 # Telemetry Session Factory
 TelemetrySessionLocal = sessionmaker(
@@ -53,6 +58,9 @@ def get_core_db() -> Generator[Session, Any, None]:
     db = CoreSessionLocal()
     try:
         yield db
+    except Exception:
+        logger.exception("Core database request failed")
+        raise
     finally:
         db.close()
 
@@ -65,5 +73,8 @@ def get_telemetry_db() -> Generator[Session, Any, None]:
     db = TelemetrySessionLocal()
     try:
         yield db
+    except Exception:
+        logger.exception("Telemetry database request failed")
+        raise
     finally:
         db.close()

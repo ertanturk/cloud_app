@@ -63,7 +63,7 @@ class UploadService:
             raise QuotaExceededError()
 
         file_id = self.file_repo.get_next_file_id()
-        expires_at = datetime.now(UTC) + timedelta(minutes=20)
+        expires_at = datetime.now(UTC) + timedelta(hours=1)
 
         reservation = self.reservation_repo.create_reservation(
             file_id=file_id,
@@ -72,6 +72,11 @@ class UploadService:
             reserved_bytes=file_size_bytes,
             expires_at=expires_at,
         )
+        # Ensure zero-byte uploads still have a concrete temporary artifact.
+        if file_size_bytes == 0:
+            self.storage_service.write_chunk(
+                self.storage_service.get_temp_path(file_id), b"", append=False
+            )
 
         self.telemetry_repo.log_event(
             event_type_name="upload.reserved",
@@ -111,7 +116,19 @@ class UploadService:
         ]:
             raise ReservationExpiredError()
 
-        new_expires_at = now + timedelta(minutes=20)
+        current_size = (
+            self.storage_service.file_size(
+                self.storage_service.get_temp_path(reservation.file_id)
+            )
+            if self.storage_service.exists(
+                self.storage_service.get_temp_path(reservation.file_id)
+            )
+            else 0
+        )
+        if current_size + len(chunk) > reservation.reserved_bytes:
+            raise UploadSizeMismatchError()
+
+        new_expires_at = now + timedelta(minutes=10)
         self.reservation_repo.update_status(
             reservation_id=reservation_id,
             user_id=user_id,
@@ -140,6 +157,12 @@ class UploadService:
         if reservation is None:
             raise ReservationNotFoundError()
 
+        if reservation.status == "completed":
+            existing = self.file_repo.get_active_file(reservation.file_id, user_id)
+            if existing is None:
+                raise ReservationNotFoundError()
+            return existing
+
         if reservation.expires_at < datetime.now(UTC):
             raise ReservationExpiredError()
 
@@ -153,7 +176,7 @@ class UploadService:
             self.storage_service.delete_file(temp_path)
             raise UploadSizeMismatchError()
 
-        extension = Path(original_file_name).suffix.lstrip(".") or None
+        extension = Path(original_file_name).suffix.lstrip(".").lower() or None
 
         final_path = self.storage_service.get_final_path(
             user_id=user_id,
@@ -192,3 +215,37 @@ class UploadService:
         )
 
         return file_record
+
+    def cancel_upload(
+        self,
+        reservation_id: int,
+        user_id: int,
+        session_id: int,
+        client_ip: str,
+    ) -> None:
+        """
+        Cancels an ongoing upload reservation, purges temporary disk file,
+        removes the reservation after its temporary file is cleaned up.
+        """
+        reservation = self.reservation_repo.get_by_id(
+            reservation_id=reservation_id, user_id=user_id
+        )
+        if reservation is None:
+            raise ReservationNotFoundError()
+
+        temp_path = self.storage_service.get_temp_path(reservation.file_id)
+        self.storage_service.delete_file(temp_path)
+
+        if reservation.status == "completed":
+            return
+        self.reservation_repo.delete_reservation(
+            reservation_id=reservation_id, user_id=user_id
+        )
+
+        self.telemetry_repo.log_event(
+            event_type_name="upload.cancelled",
+            client_ip=client_ip,
+            user_id=user_id,
+            session_id=session_id,
+            telemetry_data={"reservation_id": reservation_id},
+        )

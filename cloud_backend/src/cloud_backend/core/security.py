@@ -3,6 +3,7 @@ Security utilities for the cloud backend, including password hashing and JWT tok
 """
 
 import base64
+import hashlib
 import os
 import secrets
 from datetime import UTC, datetime, timedelta
@@ -23,7 +24,9 @@ _HASH_LEN_BYTE: int = 32
 _ITERATIONS: int = 2
 
 _KEY_STR: str = get_config().JWT_SECRET_KEY.get_secret_value()
-_KEY_BYTES: bytes = _KEY_STR.encode("utf-8")
+# Derive a fixed-size AES-256 key so every valid JWT secret length is usable
+# for TOTP encryption as well.
+_KEY_BYTES: bytes = hashlib.sha256(_KEY_STR.encode("utf-8")).digest()
 
 # JWT Settings
 _ALGORITHM: str = "HS256"

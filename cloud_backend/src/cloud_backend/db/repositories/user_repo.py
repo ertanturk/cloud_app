@@ -7,7 +7,10 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from cloud_backend.core.app_logging import ProjectLogger
 from cloud_backend.db.models.core import Users, UserSecrets
+
+logger = ProjectLogger.get_logger(__name__)
 
 
 class UserRepository:
@@ -67,6 +70,7 @@ class UserRepository:
             self.db.refresh(new_user)
             return new_user
         except Exception:
+            logger.exception("Failed to create user and secrets")
             self.db.rollback()
             raise
 
@@ -91,6 +95,7 @@ class UserRepository:
             self.db.refresh(secrets)
             return secrets
         except Exception:
+            logger.exception("Failed to save pending TOTP setup")
             self.db.rollback()
             raise
 
@@ -114,6 +119,7 @@ class UserRepository:
             self.db.refresh(secrets)
             return secrets
         except Exception:
+            logger.exception("Failed to confirm TOTP setup")
             self.db.rollback()
             raise
 
@@ -130,5 +136,10 @@ class UserRepository:
             self.db.refresh(user)
             return user
         except Exception:
+            logger.exception("Failed to update user quota for user_id=%s", user_id)
             self.db.rollback()
             raise
+
+    def list_users(self) -> list[Users]:
+        stmt = select(Users)
+        return list(self.db.execute(stmt).scalars().all())

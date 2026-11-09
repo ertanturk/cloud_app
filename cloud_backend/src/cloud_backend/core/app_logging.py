@@ -1,5 +1,4 @@
 import logging
-import sys
 
 from .config import get_config
 
@@ -39,9 +38,18 @@ class ProjectLogger:
             file_handler.setLevel(level)
             file_handler.setFormatter(log_format)
             logger.addHandler(file_handler)
-        except OSError as e:
-            print(f"Failed to initialize file logging: {e}")
-            sys.exit(1)
+        except OSError as exc:
+            console_handler.handle(
+                logger.makeRecord(
+                    cls._LOGGER_NAME,
+                    logging.ERROR,
+                    __file__,
+                    0,
+                    "Failed to initialize file logging: %s",
+                    (exc,),
+                    None,
+                )
+            )
 
         cls._instance = logger
         return cls._instance
@@ -52,7 +60,7 @@ class ProjectLogger:
         Retrieves the logger instance.
         Pass a module name (e.g., __name__) to easily track which file sent the log.
         """
-        if cls._instance == None:
+        if cls._instance is None:
             cls.initialize()
 
         if module_name:

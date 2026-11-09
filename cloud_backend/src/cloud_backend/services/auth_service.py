@@ -356,3 +356,30 @@ class AuthService:
             user_id=user_id,
             session_id=token.session_id,
         )
+
+    def heartbeat(self, raw_refresh_token: str, client_ip: str) -> None:
+        """
+        Verifies the validity of the refresh token and extends the session if valid.
+        """
+        if not raw_refresh_token:
+            return
+
+        hashed_token = hashlib.sha256(raw_refresh_token.encode("utf-8")).digest()
+        token = self.refresh_token_repo.get_by_hash(token_hash=hashed_token)
+
+        if token is None:
+            return
+
+        session = self.session_repo.get_active_session(session_id=token.session_id)
+
+        if session is None:
+            return
+
+        self.session_repo.update_last_activity(session_id=token.session_id)
+
+        self.telemetry_repo.log_event(
+            event_type_name="auth.heartbeat",
+            client_ip=client_ip,
+            user_id=session.user_id,
+            session_id=token.session_id,
+        )

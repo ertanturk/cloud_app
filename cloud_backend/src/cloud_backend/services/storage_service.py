@@ -8,7 +8,10 @@ import os
 import shutil
 from pathlib import Path
 
+from cloud_backend.core.app_logging import ProjectLogger
 from cloud_backend.core.exceptions import StorageError
+
+logger = ProjectLogger.get_logger(__name__)
 
 
 class StorageService:
@@ -25,9 +28,16 @@ class StorageService:
             os.makedirs(self.storage_root, exist_ok=True)
             os.makedirs(self.temp_dir, exist_ok=True)
         except OSError as err:
-            raise StorageError(
-                message=f"Failed to initialize storage directories: {err}"
-            )
+            logger.exception("Failed to initialize storage directories")
+            raise StorageError() from err
+
+    def is_safe_path(self, file_path: str) -> bool:
+        """Return whether a path resolves beneath the configured storage root."""
+        try:
+            Path(file_path).resolve().relative_to(self.storage_root)
+            return True
+        except ValueError:
+            return False
 
     def get_temp_path(self, file_id: int) -> str:
         """Returns the absolute path for an ongoing temporary file upload."""
@@ -41,17 +51,32 @@ class StorageService:
         e.g., storage_root/user_{user_id}/{file_id}.{extension}
         """
         user_dir = self.storage_root / f"user_{user_id}"
-        ext_suffix = f".{extension.lstrip('.')}" if extension else ""
+        safe_extension = "".join(
+            char
+            for char in (extension or "").lstrip(".")
+            if char.isalnum() or char in {"-", "_"}
+        )[:20]
+        ext_suffix = f".{safe_extension}" if safe_extension else ""
         return str(user_dir / f"{file_id}{ext_suffix}")
+
+    def file_size(self, file_path: str) -> int:
+        try:
+            return Path(file_path).stat().st_size
+        except OSError as err:
+            logger.exception("Failed to write storage chunk")
+            raise StorageError() from err
 
     def write_chunk(self, file_path: str, chunk: bytes, append: bool = True) -> None:
         """Appends streaming bytes to the specified file path."""
+        if not self.is_safe_path(file_path):
+            raise StorageError()
         try:
             mode = "ab" if append else "wb"
             with open(file_path, mode) as f:
                 f.write(chunk)
         except OSError as err:
-            raise StorageError(message=f"Failed to write chunk to disk: {err}")
+            logger.exception("Failed to compute storage checksum")
+            raise StorageError() from err
 
     def compute_checksum_and_size(self, file_path: str) -> tuple[bytes, int]:
         """
@@ -59,9 +84,7 @@ class StorageService:
         and total size in bytes without loading the full file into memory.
         """
         if not os.path.exists(file_path):
-            raise StorageError(
-                message=f"File not found for checksum verification: {file_path}"
-            )
+            raise StorageError()
 
         sha256_hash = hashlib.sha256()
         total_bytes = 0
@@ -74,25 +97,33 @@ class StorageService:
 
             return sha256_hash.digest(), total_bytes
         except OSError as err:
-            raise StorageError(message=f"Error computing file checksum: {err}")
+            logger.exception("Failed to move storage file")
+            raise StorageError() from err
 
     def move_file(self, source_path: str, destination_path: str) -> None:
         """Atomically moves a file from source to destination, creating target directories if needed."""
+        if not self.is_safe_path(source_path) or not self.is_safe_path(
+            destination_path
+        ):
+            raise StorageError()
         try:
             dest_dir = os.path.dirname(destination_path)
             os.makedirs(dest_dir, exist_ok=True)
             shutil.move(source_path, destination_path)
         except OSError as err:
-            raise StorageError(message=f"Failed to move file on disk: {err}")
+            logger.exception("Failed to delete storage file")
+            raise StorageError() from err
 
     def delete_file(self, file_path: str) -> None:
         """Safely and idempotently removes a file from physical storage."""
+        if not self.is_safe_path(file_path):
+            raise StorageError()
         try:
             if os.path.exists(file_path):
                 os.remove(file_path)
         except OSError as err:
-            raise StorageError(message=f"Failed to delete file from disk: {err}")
+            raise StorageError() from err
 
     def exists(self, file_path: str) -> bool:
         """Checks if a file exists on physical storage."""
-        return os.path.exists(file_path)
+        return self.is_safe_path(file_path) and os.path.exists(file_path)

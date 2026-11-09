@@ -31,12 +31,16 @@ class MetricsService:
         session_repo: SessionRepository,
         file_repo: FileRepository,
         reservation_repo: UploadReservationRepository,
-        storage_root: str = r"D:\Storage",
+        storage_root: str | None = None,
     ) -> None:
         self.user_repo = user_repo
         self.session_repo = session_repo
         self.file_repo = file_repo
         self.reservation_repo = reservation_repo
+        if storage_root is None:
+            from cloud_backend.core.config import get_config
+
+            storage_root = get_config().STORAGE_BASE_PATH
         self.storage_root = storage_root
 
         # Internal state for delta-based network speed calculation

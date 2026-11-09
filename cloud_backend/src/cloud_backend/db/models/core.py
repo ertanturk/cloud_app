@@ -5,17 +5,17 @@ from sqlalchemy import (
     BINARY,
     INT,
     NVARCHAR,
-    TINYINT,
     VARBINARY,
     Boolean,
     CheckConstraint,
+    DateTime,
     ForeignKey,
     ForeignKeyConstraint,
+    SmallInteger,
     String,
     UniqueConstraint,
     text,
 )
-from sqlalchemy.dialects.mssql import DATETIME2
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -36,7 +36,7 @@ class Users(Base):
     user_id: Mapped[int] = mapped_column(INT, primary_key=True, autoincrement=True)
     username: Mapped[str] = mapped_column(NVARCHAR(100), nullable=False, unique=True)
     password_hash: Mapped[bytes] = mapped_column(BINARY(32), nullable=False)
-    password_hash_version: Mapped[int] = mapped_column(TINYINT, nullable=False)
+    password_hash_version: Mapped[int] = mapped_column(SmallInteger, nullable=False)
     role: Mapped[str] = mapped_column(
         String(20), server_default=text("'user'"), nullable=False
     )
@@ -44,7 +44,7 @@ class Users(Base):
         BIGINT, nullable=False, server_default=text("10000000000")
     )
     created_at: Mapped[datetime] = mapped_column(
-        DATETIME2(precision=3), server_default=text("SYSUTCDATETIME()"), nullable=False
+        DateTime, server_default=text("CURRENT_TIMESTAMP"), nullable=False
     )
 
 
@@ -69,7 +69,7 @@ class UserSecrets(Base):
         BINARY(32), nullable=True
     )
     totp_setup_expires_at: Mapped[datetime | None] = mapped_column(
-        DATETIME2(precision=3), nullable=True
+        DateTime, nullable=True
     )
     totp_enabled: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=text("0")
@@ -93,14 +93,10 @@ class Sessions(Base):
     )
     client_ip: Mapped[str] = mapped_column(String(45), nullable=False)
     started_at: Mapped[datetime] = mapped_column(
-        DATETIME2(precision=3), server_default=text("SYSUTCDATETIME()"), nullable=False
+        DateTime, server_default=text("CURRENT_TIMESTAMP"), nullable=False
     )
-    ended_at: Mapped[datetime | None] = mapped_column(
-        DATETIME2(precision=3), nullable=True
-    )
-    last_activity_at: Mapped[datetime] = mapped_column(
-        DATETIME2(precision=3), nullable=False
-    )
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_activity_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 
 
 class RefreshTokens(Base):
@@ -135,14 +131,10 @@ class RefreshTokens(Base):
         INT, ForeignKey("dbo.Sessions.session_id", ondelete="CASCADE"), nullable=False
     )
     token_hash: Mapped[bytes] = mapped_column(BINARY(32), nullable=False, unique=True)
-    created_at: Mapped[datetime] = mapped_column(DATETIME2(precision=3), nullable=False)
-    expires_at: Mapped[datetime] = mapped_column(DATETIME2(precision=3), nullable=False)
-    used_at: Mapped[datetime | None] = mapped_column(
-        DATETIME2(precision=3), nullable=True
-    )
-    revoked_at: Mapped[datetime | None] = mapped_column(
-        DATETIME2(precision=3), nullable=True
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     replaced_by_token_id: Mapped[int | None] = mapped_column(BIGINT, nullable=True)
 
 
@@ -174,9 +166,7 @@ class Files(Base):
     status: Mapped[str] = mapped_column(
         String(20), nullable=False, server_default=text("'active'")
     )
-    uploaded_at: Mapped[datetime] = mapped_column(
-        DATETIME2(precision=3), nullable=False
-    )
+    uploaded_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 
 
 class UploadReservations(Base):
@@ -212,14 +202,8 @@ class UploadReservations(Base):
     )
     reserved_bytes: Mapped[int] = mapped_column(BIGINT, nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DATETIME2(precision=3), nullable=False)
-    upload_started_at: Mapped[datetime | None] = mapped_column(
-        DATETIME2(precision=3), nullable=True
-    )
-    last_activity_at: Mapped[datetime | None] = mapped_column(
-        DATETIME2(precision=3), nullable=True
-    )
-    expires_at: Mapped[datetime] = mapped_column(DATETIME2(precision=3), nullable=False)
-    completed_at: Mapped[datetime | None] = mapped_column(
-        DATETIME2(precision=3), nullable=True
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    upload_started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_activity_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

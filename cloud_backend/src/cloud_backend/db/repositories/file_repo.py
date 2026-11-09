@@ -5,7 +5,10 @@ from datetime import UTC, datetime
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
+from cloud_backend.core.app_logging import ProjectLogger
 from cloud_backend.db.models.core import Files
+
+logger = ProjectLogger.get_logger(__name__)
 
 
 class FileRepository:
@@ -59,15 +62,20 @@ class FileRepository:
             self.db.refresh(file)
             return file
         except Exception:
+            logger.exception("Failed to create file record for file_id=%s", file_id)
             self.db.rollback()
             raise
 
-    def list_active_files_by_user(self, user_id: int) -> list[Files]:
+    def list_active_files_by_user(
+        self, user_id: int, limit: int = 100, offset: int = 0
+    ) -> list[Files]:
         """Retrieves all active files belonging to a user ordered by uploaded_at descending."""
         stmt = (
             select(Files)
             .where(Files.user_id == user_id, Files.status == "active")
             .order_by(Files.uploaded_at.desc())
+            .limit(limit)
+            .offset(offset)
         )
         return list(self.db.scalars(stmt).all())
 
@@ -97,6 +105,7 @@ class FileRepository:
             self.db.refresh(file)
             return file
         except Exception:
+            logger.exception("Failed to mark file_id=%s as deleting", file_id)
             self.db.rollback()
             raise
 
@@ -112,5 +121,6 @@ class FileRepository:
             self.db.commit()
             return True
         except Exception:
+            logger.exception("Failed to delete file record for file_id=%s", file_id)
             self.db.rollback()
             raise

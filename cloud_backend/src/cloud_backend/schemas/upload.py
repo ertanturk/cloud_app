@@ -16,6 +16,13 @@ class UploadReservationRequest(BaseModel):
     )
 
 
+class UploadCompleteRequest(BaseModel):
+    original_file_name: str = Field(
+        ..., min_length=1, max_length=255, description="Original file name"
+    )
+
+
 class UploadReservationResponse(BaseModel):
     reservation_id: int
+    file_id: int
     expires_at: datetime

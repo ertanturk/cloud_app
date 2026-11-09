@@ -4,12 +4,11 @@ from sqlalchemy import (
     BIGINT,
     INT,
     NVARCHAR,
-    CheckConstraint,
+    DateTime,
     ForeignKey,
     String,
     text,
 )
-from sqlalchemy.dialects.mssql import DATETIME2
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -29,13 +28,7 @@ class TelemetryEvents(Base):
 
 class Telemetry(Base):
     __tablename__ = "Telemetry"
-    __table_args__ = (
-        CheckConstraint(
-            "telemetry_data IS NULL OR ISJSON(telemetry_data) = 1",
-            name="chk_telemetry_data_is_json",
-        ),
-        {"schema": "dbo"},
-    )
+    __table_args__ = ({"schema": "dbo"},)
 
     event_id: Mapped[int] = mapped_column(BIGINT, primary_key=True, autoincrement=True)
     user_id: Mapped[int | None] = mapped_column(INT, nullable=True)
@@ -46,5 +39,5 @@ class Telemetry(Base):
     )
     telemetry_data: Mapped[str | None] = mapped_column(NVARCHAR(None), nullable=True)
     event_time: Mapped[datetime] = mapped_column(
-        DATETIME2(precision=3), nullable=False, server_default=text("SYSUTCDATETIME()")
+        DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP")
     )

@@ -7,7 +7,10 @@ from datetime import UTC, datetime
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from cloud_backend.core.app_logging import ProjectLogger
 from cloud_backend.db.models.core import UploadReservations, Users
+
+logger = ProjectLogger.get_logger(__name__)
 
 
 class UploadReservationRepository:
@@ -25,6 +28,7 @@ class UploadReservationRepository:
             stmt = select(Users).where(Users.user_id == user_id).with_for_update()
             return self.db.scalar(stmt)
         except Exception:
+            logger.exception("Failed to lock quota row for user_id=%s", user_id)
             self.db.rollback()
             raise
 
@@ -66,6 +70,7 @@ class UploadReservationRepository:
             self.db.refresh(reservation)
             return reservation
         except Exception:
+            logger.exception("Failed to create upload reservation")
             self.db.rollback()
             raise
 
@@ -122,5 +127,32 @@ class UploadReservationRepository:
             self.db.refresh(reservation)
             return reservation
         except Exception:
+            logger.exception(
+                "Failed to update upload reservation_id=%s", reservation_id
+            )
+            self.db.rollback()
+            raise
+
+    def delete_reservation(self, reservation_id: int, user_id: int) -> bool:
+        """Delete a reservation after its temporary file has been removed."""
+        try:
+            stmt = (
+                select(UploadReservations)
+                .where(
+                    UploadReservations.reservation_id == reservation_id,
+                    UploadReservations.user_id == user_id,
+                )
+                .with_for_update()
+            )
+            reservation = self.db.scalar(stmt)
+            if reservation is None:
+                return False
+            self.db.delete(reservation)
+            self.db.commit()
+            return True
+        except Exception:
+            logger.exception(
+                "Failed to delete upload reservation_id=%s", reservation_id
+            )
             self.db.rollback()
             raise

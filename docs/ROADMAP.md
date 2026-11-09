@@ -117,21 +117,25 @@
 
 ## Phase 5: Backend API Routers & Main Application
 
-- [ ] **`cloud_backend/src/cloud_backend/api/v1/auth.py`**
+- [x] **`cloud_backend/src/cloud_backend/api/v1/dependencies.py`**
+    - Implement dependency injection
+- [x] **`cloud_backend/src/cloud_backend/api/v1/auth.py`**
     - Implement endpoints: `/login`, `/totp/setup`, `/totp/confirm`, `/refresh`, `/logout`, `/heartbeat`.
-- [ ] **`cloud_backend/src/cloud_backend/api/v1/files.py`**
+- [x] **`cloud_backend/src/cloud_backend/api/v1/files.py`**
     - Implement endpoints: `GET /files`, `GET /files/{id}/download`, `DELETE /files/{id}`.
-- [ ] **`cloud_backend/src/cloud_backend/api/v1/uploads.py`**
+- [x] **`cloud_backend/src/cloud_backend/api/v1/uploads.py`**
     - Implement endpoints: `POST /uploads`, `PUT /uploads/{id}/content`, `DELETE /uploads/{id}`.
-- [ ] **`cloud_backend/src/cloud_backend/api/v1/storage.py`**
+- [x] **`cloud_backend/src/cloud_backend/api/v1/storage.py`**
     - Implement endpoint: `GET /storage`.
-- [ ] **`cloud_backend/src/cloud_backend/api/v1/admin.py`**
+- [x] **`cloud_backend/src/cloud_backend/api/v1/admin.py`**
     - Implement endpoints: `GET/POST /admin/users`, `PATCH /admin/users/{id}/quota`, `GET /admin/sessions`, `GET /admin/telemetry`, `GET /admin/metrics/*`.
-- [ ] **`cloud_backend/src/cloud_backend/api/v1/sse.py`**
+- [x] **`cloud_backend/src/cloud_backend/api/v1/sse.py`**
     - Implement persistent Server-Sent Events endpoint (`GET /admin/events`) pushing system metrics every 2s.
-- [ ] **`cloud_backend/src/cloud_backend/api/router.py`**
+- [x] **`cloud_backend/src/cloud_backend/api/router.py`**
     - Combine all v1 sub-routers into single master router.
-- [ ] **`cloud_backend/src/cloud_backend/main.py`**
+- [x] **`cloud_backend/src/cloud_backend/bootstrap.py`**
+    - Create bootstrap function to initialize dependencies, tables, and admin for the server.
+- [x] **`cloud_backend/src/cloud_backend/main.py`**
     - Initialize FastAPI app, middleware, routes, and background task runners.
 
 ---

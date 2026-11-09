@@ -36,9 +36,11 @@ class FileService:
         self.storage_service = storage_service
         self.telemetry_repo = telemetry_repo
 
-    def list_user_files(self, user_id: int) -> list[Files]:
+    def list_user_files(
+        self, user_id: int, limit: int = 100, offset: int = 0
+    ) -> list[Files]:
         """Retrieves all active file records for the specified user."""
-        return self.file_repo.list_active_files_by_user(user_id)
+        return self.file_repo.list_active_files_by_user(user_id, limit, offset)
 
     def get_file_for_download(
         self, file_id: int, user_id: int, session_id: int, client_ip: str
@@ -51,8 +53,10 @@ class FileService:
         if file_record is None:
             raise FileNotFoundError()
 
+        if not self.storage_service.is_safe_path(file_record.storage_path):
+            raise FileNotFoundError()
         if not self.storage_service.exists(file_record.storage_path):
-            raise StorageError(message="Physical file is missing from storage target.")
+            raise StorageError()
 
         self.telemetry_repo.log_event(
             event_type_name="file.downloaded",

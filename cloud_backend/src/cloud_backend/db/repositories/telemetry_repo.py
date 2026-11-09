@@ -6,7 +6,10 @@ from datetime import UTC, datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from cloud_backend.core.app_logging import ProjectLogger
 from cloud_backend.db.models.telemetry import Telemetry, TelemetryEvents
+
+logger = ProjectLogger.get_logger(__name__)
 
 
 class TelemetryRepository:
@@ -50,6 +53,7 @@ class TelemetryRepository:
             self.db.refresh(event)
             return event
         except Exception:
+            logger.exception("Failed to write telemetry event type=%s", event_type_name)
             self.db.rollback()
             raise
 
@@ -59,20 +63,29 @@ class TelemetryRepository:
         offset: int = 0,
         event_type_name: str | None = None,
         user_id: int | None = None,
-    ) -> list[Telemetry]:
+    ) -> list[tuple[Telemetry, str]]:
         """
-        Retrieves paginated telemetry events ordered by event_time descending.
-        Supports optional filtering by event_type_name and user_id.
+        Retrieves paginated telemetry events joined with TelemetryEvents.event_type name.
+        Returns a list of tuples: (Telemetry instance, event_type string).
         """
-        stmt = select(Telemetry).order_by(Telemetry.event_time.desc())
+        stmt = (
+            select(Telemetry, TelemetryEvents.event_type)
+            .join(
+                TelemetryEvents,
+                Telemetry.event_type_id == TelemetryEvents.event_type_id,
+            )
+            .order_by(Telemetry.event_time.desc())
+        )
 
         if event_type_name:
-            stmt = stmt.join(TelemetryEvents).where(
-                TelemetryEvents.event_type == event_type_name
-            )
+            stmt = stmt.where(TelemetryEvents.event_type == event_type_name)
 
         if user_id is not None:
             stmt = stmt.where(Telemetry.user_id == user_id)
 
         stmt = stmt.limit(limit).offset(offset)
-        return list(self.db.scalars(stmt).all())
+        return list(self.db.execute(stmt).all())
+
+    def get_recent_events(self, limit: int = 100) -> list[tuple[Telemetry, str]]:
+        """Alias method for retrieving recent telemetry logs with event_type names."""
+        return self.list_events(limit=limit, offset=0)
