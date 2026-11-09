@@ -140,14 +140,14 @@
 
 ## Phase 6: Background Tasks
 
-- [ ] **`cloud_backend/src/cloud_backend/tasks/cleanup.py`**
+- [x] **`cloud_backend/src/cloud_backend/tasks/cleanup.py`**
     - Mark sessions inactive for >20 mins as ended.
-- [ ] **`cloud_backend/src/cloud_backend/tasks/garbage_collector.py`**
-    - Clean orphaned `.tmp/*.part` files.
+- [x] **`cloud_backend/src/cloud_backend/tasks/garbage_collector.py`**
+    - Clean orphaned `.tmp/upload_{file_id}.tmp` files.
     - Delete completed reservations older than 24 hours.
-- [ ] **`cloud_backend/src/cloud_backend/tasks/file_recovery.py`**
+- [x] **`cloud_backend/src/cloud_backend/tasks/file_recovery.py`**
     - Retry physical or metadata deletion for files stuck in `deleting` status.
-- [ ] **`cloud_backend/src/cloud_backend/tasks/checksum_checker.py`**
+- [x] **`cloud_backend/src/cloud_backend/tasks/checksum_checker.py`**
     - Run weekly SHA-256 checksum check on all stored physical files.
 
 ---

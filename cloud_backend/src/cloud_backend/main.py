@@ -3,8 +3,10 @@ Main entry point for the Cloud Storage Backend FastAPI application.
 Configures application lifecycle, CORS middleware, global exception handlers, and routing.
 """
 
+import asyncio
 from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
+from pathlib import Path
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,7 +14,12 @@ from fastapi.responses import JSONResponse
 
 from cloud_backend.api.v1 import admin, auth, files, sse, storage, uploads
 from cloud_backend.core.app_logging import ProjectLogger
+from cloud_backend.core.config import get_config
 from cloud_backend.core.exceptions import ServiceException
+from cloud_backend.tasks.checksum_checker import checksum_checker_task
+from cloud_backend.tasks.cleanup import session_cleanup_task
+from cloud_backend.tasks.file_recovery import file_recovery_task
+from cloud_backend.tasks.garbage_collector import garbage_collector_task
 
 logger = ProjectLogger.get_logger(__name__)
 
@@ -20,9 +27,38 @@ logger = ProjectLogger.get_logger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Handles startup and shutdown events for application background tasks and resources."""
+    cleanup_task = asyncio.create_task(
+        session_cleanup_task(), name="session-cleanup-task"
+    )
+    garbage_task = asyncio.create_task(
+        garbage_collector_task(str(Path(get_config().STORAGE_BASE_PATH) / ".tmp")),
+        name="garbage-collector-task",
+    )
+    file_recovery_background_task = asyncio.create_task(
+        file_recovery_task(get_config().STORAGE_BASE_PATH),
+        name="file-recovery-task",
+    )
+    checksum_background_task = asyncio.create_task(
+        checksum_checker_task(get_config().STORAGE_BASE_PATH),
+        name="checksum-checker-task",
+    )
     logger.info("Cloud Backend API startup complete.")
-    yield
-    logger.info("Cloud Backend API shutdown complete.")
+    try:
+        yield
+    finally:
+        cleanup_task.cancel()
+        garbage_task.cancel()
+        file_recovery_background_task.cancel()
+        checksum_background_task.cancel()
+        with suppress(asyncio.CancelledError):
+            await cleanup_task
+        with suppress(asyncio.CancelledError):
+            await garbage_task
+        with suppress(asyncio.CancelledError):
+            await file_recovery_background_task
+        with suppress(asyncio.CancelledError):
+            await checksum_background_task
+        logger.info("Cloud Backend API shutdown complete.")
 
 
 app = FastAPI(
