@@ -133,8 +133,6 @@
     - Implement persistent Server-Sent Events endpoint (`GET /admin/events`) pushing system metrics every 2s.
 - [x] **`cloud_backend/src/cloud_backend/api/router.py`**
     - Combine all v1 sub-routers into single master router.
-- [x] **`cloud_backend/src/cloud_backend/bootstrap.py`**
-    - Create bootstrap function to initialize dependencies, tables, and admin for the server.
 - [x] **`cloud_backend/src/cloud_backend/main.py`**
     - Initialize FastAPI app, middleware, routes, and background task runners.
 

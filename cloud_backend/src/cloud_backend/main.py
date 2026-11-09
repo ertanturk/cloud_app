@@ -13,7 +13,6 @@ from fastapi.responses import JSONResponse
 from cloud_backend.api.v1 import admin, auth, files, sse, storage, uploads
 from cloud_backend.core.app_logging import ProjectLogger
 from cloud_backend.core.exceptions import ServiceException
-from cloud_backend.db.telemetry_events import initialize_database
 
 logger = ProjectLogger.get_logger(__name__)
 
@@ -21,7 +20,6 @@ logger = ProjectLogger.get_logger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Handles startup and shutdown events for application background tasks and resources."""
-    initialize_database()
     logger.info("Cloud Backend API startup complete.")
     yield
     logger.info("Cloud Backend API shutdown complete.")
