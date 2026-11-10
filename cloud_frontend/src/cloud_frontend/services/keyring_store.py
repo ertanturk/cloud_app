@@ -11,7 +11,12 @@ class KeyringStore:
     def __init__(self) -> None:
         self._keyring = keyring.get_keyring()
 
-    def store(self, key: str, refresh_token: str) -> None:
+    def store(
+        self,
+        key: str,
+        refresh_token: str,
+        user: dict[str, object] | None = None,
+    ) -> None:
         if not key:
             raise ValueError("Keyring key cannot be empty.")
         if not refresh_token:
@@ -23,6 +28,11 @@ class KeyringStore:
             "created_at": now.isoformat(),
             "refresh_token": refresh_token,
         }
+        if user:
+            username = user.get("username")
+            role = user.get("role")
+            if isinstance(username, str) and isinstance(role, str):
+                data_to_store.update({"username": username, "role": role})
 
         json_string = json.dumps(data_to_store)
         self._keyring.set_password(SERVICE_NAME, key, json_string)
@@ -54,10 +64,15 @@ class KeyringStore:
             self._keyring.delete_password(SERVICE_NAME, key)
             return None
 
-        return {
+        record = {
             "created_at": created_at.isoformat(),
             "refresh_token": refresh_token,
         }
+        for field in ("username", "role"):
+            value = stored_data.get(field)
+            if isinstance(value, str):
+                record[field] = value
+        return record
 
     def clear(self, key: str) -> None:
         if not self._keyring.get_password(SERVICE_NAME, key):

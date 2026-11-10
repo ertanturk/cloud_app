@@ -23,6 +23,12 @@ from cloud_backend.db.repositories.user_repo import UserRepository
 from cloud_backend.services.storage_service import StorageService
 
 
+def _as_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
+
+
 class UploadService:
     """Service orchestrating chunked file upload operations, quota enforcement, and verification."""
 
@@ -110,7 +116,7 @@ class UploadService:
             raise ReservationNotFoundError()
 
         now = datetime.now(UTC)
-        if reservation.expires_at < now or reservation.status not in [
+        if _as_utc(reservation.expires_at) < now or reservation.status not in [
             "reserved",
             "uploading",
         ]:
@@ -163,7 +169,7 @@ class UploadService:
                 raise ReservationNotFoundError()
             return existing
 
-        if reservation.expires_at < datetime.now(UTC):
+        if _as_utc(reservation.expires_at) < datetime.now(UTC):
             raise ReservationExpiredError()
 
         temp_path = self.storage_service.get_temp_path(reservation.file_id)

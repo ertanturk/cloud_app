@@ -7,7 +7,10 @@ The application uses two SQL Server databases.
 - **Core Database:** stores users, user secrets, sessions, refresh tokens, files, and upload reservations.
 - **Telemetry Database:** stores application events. It can store events from unknown or unauthenticated users.
 
-The application stores file content on the file system. The Core Database stores file metadata and the relative storage path.
+The application stores file content on the file system. The Core Database stores file
+metadata and the relative storage path. The configured storage root is normalized to
+an absolute Windows path at application startup; the absolute root is used by the
+backend and metrics API, never supplied by the TUI.
 
 All date and time values are stored in UTC. Use `DATETIME2(3)` for date and time columns.
 

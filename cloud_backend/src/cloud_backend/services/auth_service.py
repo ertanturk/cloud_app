@@ -34,6 +34,13 @@ from cloud_backend.db.repositories import (
 )
 
 
+def _as_utc(value: datetime) -> datetime:
+    """Treat SQL Server's timezone-naive UTC timestamps as UTC."""
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
+
+
 class AuthService:
     def __init__(
         self,
@@ -109,7 +116,16 @@ class AuthService:
         if user_secret.totp_enabled:
             raise ExistingTotpError()
 
-        totp_secret = pyotp.random_base32()
+        pending_secret = user_secret.pending_totp_secret
+        pending_expires_at = user_secret.totp_setup_expires_at
+        if (
+            pending_secret is not None
+            and pending_expires_at is not None
+            and _as_utc(pending_expires_at) >= datetime.now(UTC)
+        ):
+            totp_secret = decrypt_totp_secret(pending_secret.decode("utf-8"))
+        else:
+            totp_secret = pyotp.random_base32()
         raw_setup_token = secrets.token_urlsafe(32)
 
         encrypted_secret_str = encrypt_totp_secret(totp_secret)
@@ -150,10 +166,8 @@ class AuthService:
         if user_secret is None or user_secret.pending_totp_secret is None:
             raise InvalidTokenError()
 
-        if (
-            user_secret.totp_setup_expires_at is None
-            or user_secret.totp_setup_expires_at < datetime.now(UTC)
-        ):
+        expires_at = user_secret.totp_setup_expires_at
+        if expires_at is None or _as_utc(expires_at) < datetime.now(UTC):
             raise TotpSetupExpiredError()
 
         encrypted_secret_str = user_secret.pending_totp_secret.decode("utf-8")
@@ -288,7 +302,7 @@ class AuthService:
         if token.revoked_at is not None:
             raise InvalidTokenError()
 
-        if token.expires_at < now:
+        if _as_utc(token.expires_at) < now:
             raise InvalidTokenError()
 
         session = self.session_repo.get_active_session(session_id=token.session_id)

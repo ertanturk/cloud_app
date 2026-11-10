@@ -106,18 +106,38 @@ class ApiClient:
         destination: Path,
         chunk_size: int = 1024 * 1024,
     ) -> None:
+        destination = destination.expanduser()
+        if not destination.parent.is_dir():
+            raise FileNotFoundError(
+                f"Download destination folder was not found: {destination.parent}"
+            )
+        temporary_destination = destination.with_name(f"{destination.name}.part")
+        bytes_written = 0
         with self._client.stream(
             "GET",
             f"/api/v1/files/{file_id}/download",
             headers=self._headers(),
+            timeout=httpx.Timeout(30.0, read=None),
         ) as response:
             response.raise_for_status()
-
-            with destination.open("wb") as file:
+            expected_length = response.headers.get("Content-Length")
+            with temporary_destination.open("wb") as file:
                 for chunk in response.iter_bytes(chunk_size):
                     file.write(chunk)
+                    bytes_written += len(chunk)
+
+        if expected_length is not None and bytes_written != int(expected_length):
+            temporary_destination.unlink(missing_ok=True)
+            raise OSError(
+                f"Download was incomplete: received {bytes_written} of "
+                f"{expected_length} bytes."
+            )
+        temporary_destination.replace(destination)
 
     def upload(self, path: Path, original_name: str) -> dict[str, Any]:
+        if not path.is_file():
+            raise FileNotFoundError(f"Upload file was not found: {path}")
+
         reservation_response = self.post(
             "/api/v1/uploads",
             json={
@@ -127,16 +147,20 @@ class ApiClient:
         )
         reservation = reservation_response.json()
 
+        reservation_id = int(reservation["reservation_id"])
         try:
             self.upload_file(
                 path=path,
-                reservation_id=reservation["reservation_id"],
+                reservation_id=reservation_id,
             )
             complete_response = self.post(
-                f"/api/v1/uploads/{reservation['reservation_id']}/complete",
+                f"/api/v1/uploads/{reservation_id}/complete",
                 json={"original_file_name": original_name},
             )
             return complete_response.json()
         except Exception:
-            self.delete(f"/api/v1/uploads/{reservation['reservation_id']}")
+            try:
+                self.delete(f"/api/v1/uploads/{reservation_id}")
+            except httpx.HTTPError:
+                pass
             raise

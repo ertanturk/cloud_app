@@ -134,6 +134,15 @@ class UserNotFoundError(ServiceException):
         )
 
 
+class UserDeletionBlockedError(ServiceException):
+    def __init__(self) -> None:
+        super().__init__(
+            code="USER_DELETION_BLOCKED",
+            message="User cannot be deleted while files or session history exists.",
+            status_code=409,
+        )
+
+
 class InvalidQuotaError(ServiceException):
     def __init__(self) -> None:
         super().__init__(

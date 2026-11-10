@@ -73,7 +73,7 @@
     - `LoginResponse` (`access_token`, `refresh_token`, `expires_in`, `user`).
     - `TotpSetupResponse` (`provisioning_uri`, `setup_token`).
     - `TotpConfirmRequest` (`setup_token`, `totp_code`).
-    - `RefreshRequest` (`refresh_token`).
+    - `RefreshRequest` (`raw_refresh_token`).
 - [x] **`cloud_backend/src/cloud_backend/schemas/file.py`**
     - `FileItemResponse` (`file_id`, `file_name`, `file_size_bytes`, `extension`, `uploaded_at`).
     - `StorageResponse` (`quota_bytes`, `used_bytes`, `reserved_bytes`, `available_bytes`).
@@ -313,42 +313,45 @@ This phase prepares a Windows machine and starts the backend before frontend dev
 
 ### 9.1 CLI Arguments & Themes
 
-- [ ] **`cloud_frontend/src/cloud_frontend/cli/args.py`**
+- [x] **`cloud_frontend/src/cloud_frontend/cli/args.py`**
     - Parse CLI flags (`--admin`).
-- [ ] **`cloud_frontend/src/cloud_frontend/ui/styles/theme.py`**
+- [x] **`cloud_frontend/src/cloud_frontend/ui/styles/theme.py`**
     - Define **Autumn Dark** color variables (`#292522`, Surface, Raised, Text, Status colors).
 
 ### 9.2 Custom Widgets
 
-- [ ] **`cloud_frontend/src/cloud_frontend/ui/widgets/header.py`**
-    - Display title `Cloud Store`, connection state, and username.
-- [ ] **`cloud_frontend/src/cloud_frontend/ui/widgets/storage_bar.py`**
+- [x] **`cloud_frontend/src/cloud_frontend/ui/widgets/header.py`**
+    - Display title `CloudVault`, connection state, and username.
+- [x] **`cloud_frontend/src/cloud_frontend/ui/widgets/storage_bar.py`**
     - Render progress bar for used, reserved, and available quota.
-- [ ] **`cloud_frontend/src/cloud_frontend/ui/widgets/file_table.py`**
+- [x] **`cloud_frontend/src/cloud_frontend/ui/widgets/file_table.py`**
     - Render interactive table of user files.
-- [ ] **`cloud_frontend/src/cloud_frontend/ui/widgets/metrics_card.py`**
+- [x] **`cloud_frontend/src/cloud_frontend/ui/widgets/metrics_card.py`**
     - Render system metrics (CPU, RAM, Disk, Net) card widgets for admin.
 
 ### 9.3 Screens
 
-- [ ] **`cloud_frontend/src/cloud_frontend/ui/screens/login.py`**
+- [x] **`cloud_frontend/src/cloud_frontend/ui/screens/login.py`**
     - Form screen for username, password, and TOTP code.
-- [ ] **`cloud_frontend/src/cloud_frontend/ui/screens/user_dashboard.py`**
-    - Main User TUI screen (`U` upload, `D` download, `R` remove, `Q` quit).
-- [ ] **`cloud_frontend/src/cloud_frontend/ui/screens/admin_dashboard.py`**
+- [x] **`cloud_frontend/src/cloud_frontend/ui/screens/user_dashboard.py`**
+    - Main User TUI screen (`U` upload, `D` download, `R` remove, `L` logout, `Q` quit).
+    - Accept local upload paths and directory or explicit-file download targets.
+    - Verify streamed download completion before reporting success.
+- [x] **`cloud_frontend/src/cloud_frontend/ui/screens/admin_dashboard.py`**
     - Main Admin dashboard with live metric cards and recent telemetry log.
-- [ ] **`cloud_frontend/src/cloud_frontend/ui/screens/admin_sessions.py`**
+- [x] **`cloud_frontend/src/cloud_frontend/ui/screens/admin_sessions.py`**
     - Table screen displaying active user sessions.
-- [ ] **`cloud_frontend/src/cloud_frontend/ui/screens/admin_telemetry.py`**
+- [x] **`cloud_frontend/src/cloud_frontend/ui/screens/admin_telemetry.py`**
     - Table screen with filter inputs for event history.
-- [ ] **`cloud_frontend/src/cloud_frontend/ui/screens/admin_users.py`**
-    - User list screen and quota modification dialog.
-- [ ] **`cloud_frontend/src/cloud_frontend/ui/screens/admin_register.py`**
+- [x] **`cloud_frontend/src/cloud_frontend/ui/screens/admin_users.py`**
+    - User list screen with selected-user quota editor.
+    - Normal and force-delete actions for standard users.
+- [x] **`cloud_frontend/src/cloud_frontend/ui/screens/admin_register.py`**
     - Screen to add user and display terminal QR code for 2FA.
 
 ### 9.4 Frontend Entry Point
 
-- [ ] **`cloud_frontend/src/cloud_frontend/main.py`**
+- [x] **`cloud_frontend/src/cloud_frontend/main.py`**
     - Entry point for `uv run cloud` and `uv run cloud --admin`.
 
 ---

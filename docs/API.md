@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-Cloud Store uses a TUI, an API Server, Microsoft SQL Server, and file-system storage.
+CloudVault uses a TUI, an API Server, Microsoft SQL Server, and file-system storage.
 
 The TUI communicates with the API Server. It must not connect directly to SQL Server or access server storage.
 
@@ -75,7 +75,8 @@ The server creates a TOTP secret and returns a provisioning URI. The TUI display
 
 The setup flow must use a short-lived setup token. The setup token is not an access token and cannot access normal API endpoints.
 
-**Database dependency:** The current `UserSecrets` table has an encrypted TOTP secret but does not define whether enrollment is complete or pending. The database design must add a way to store and identify pending enrollment before this endpoint is implemented.
+The `UserSecrets` model stores pending and confirmed TOTP secrets separately and
+tracks enrollment with `totp_enabled`.
 
 ### 2.3 TOTP Confirmation
 
@@ -99,7 +100,7 @@ Request:
 
 ```json
 {
-    "refresh_token": "current_refresh_token"
+    "raw_refresh_token": "current_refresh_token"
 }
 ```
 
@@ -130,7 +131,7 @@ Request:
 
 ```json
 {
-    "refresh_token": "current_refresh_token"
+    "raw_refresh_token": "current_refresh_token"
 }
 ```
 
@@ -138,7 +139,9 @@ The server identifies the session from the refresh-token hash, sets `Sessions.en
 
 Logout is idempotent.
 
-The TUI calls logout when the user selects `Q (Quit)` or presses `Ctrl+C`. It clears the access token from memory and the refresh token from the OS keyring, then exits.
+The TUI keeps quit and logout separate. `Q` exits without clearing the refresh
+token, allowing automatic restore on the next start. `L` calls logout, clears the
+access token from memory and the refresh token from the OS keyring, then exits.
 
 If the server is unavailable, the TUI still clears local tokens and exits. The server's inactivity cleanup later ends the session.
 
@@ -191,7 +194,8 @@ Each file contains:
 - `extension`
 - `uploaded_at`
 
-**Database dependency:** The current `Files` table does not contain an upload timestamp or a file status. Add these fields so the API can sort files and exclude files being deleted.
+The `Files` model stores `uploaded_at` and `status`, allowing the API to sort files
+and exclude files being deleted.
 
 ### 3.2 Download File
 
@@ -217,7 +221,10 @@ The server:
 
 The server must not accept a storage path from the client or expose the physical storage path.
 
-The TUI writes the download to a temporary local file, calculates its SHA-256 checksum, and compares it with `X-Content-SHA256`. It moves the file to its final local destination only after successful verification.
+The TUI writes the download to a temporary local `.part` file, verifies the
+received byte count against `Content-Length`, and moves it to the final local
+destination only after the file has been created successfully. The destination
+may be an existing directory or an explicit file path.
 
 Resumable downloads are not supported in v1. A failed download must start again.
 
@@ -382,7 +389,7 @@ Each user contains:
 - `storage_quota_bytes`
 - `created_at`
 
-**Database dependency:** The current `Users` table does not define `created_at`. Add it if the admin UI needs to show account creation time.
+The `Users` model stores `created_at`, which is returned to the admin UI.
 
 ### 4.2 Create User
 
@@ -408,7 +415,7 @@ The initial password must never be stored as plain text.
 
 ### 4.3 Change User Quota
 
-`PATCH /api/v1/admin/users/{user_id}/quota`
+`PUT /api/v1/admin/users/{user_id}/quota`
 
 Request:
 
@@ -426,7 +433,22 @@ The quota change takes effect after the Core Database transaction commits.
 
 Only an admin can change a user's quota. A user cannot change their own quota.
 
-### 4.4 List Active Sessions
+### 4.4 Delete User
+
+`DELETE /api/v1/admin/users/{user_id}`
+
+Deletes an unused standard user. The operation is blocked when the user still has
+files or session history.
+
+### 4.5 Force Delete User
+
+`DELETE /api/v1/admin/users/{user_id}/force`
+
+Deletes a standard user, owned file metadata, upload reservations, sessions, refresh
+tokens, and safely-owned physical files. Admin accounts and the current admin cannot
+be deleted.
+
+### 4.6 List Active Sessions
 
 `GET /api/v1/admin/sessions`
 
@@ -445,9 +467,9 @@ A session is active only when `ended_at` is `NULL` and its inactivity timeout ha
 
 The server must not show an expired session just because the cleanup task has not updated it yet.
 
-**Database dependency:** Add `client_ip` to `Sessions`. The current table does not store it.
+The `Sessions` model stores `client_ip` for active-session administration.
 
-### 4.5 Get Telemetry
+### 4.7 Get Telemetry
 
 `GET /api/v1/admin/telemetry`
 
@@ -489,7 +511,7 @@ The Telemetry Database keeps logical user and session IDs without foreign keys t
 
 Telemetry must never store passwords, access tokens, refresh tokens, TOTP codes, or other secrets.
 
-### 4.6 System Metrics
+### 4.8 System Metrics
 
 `GET /api/v1/admin/metrics/system`
 
@@ -507,7 +529,7 @@ System metrics are collected every 2 seconds only while the admin dashboard is c
 
 System metric samples are kept in memory and are not stored as historical rows in SQL Server.
 
-### 4.7 Application Metrics
+### 4.9 Application Metrics
 
 `GET /api/v1/admin/metrics/application`
 
@@ -693,33 +715,34 @@ The following features are not supported in v1:
 - Multiple admin accounts
 - Multiple simultaneous admin TUI connections
 
-## 10. Required Database Alignment
+## 10. Database Alignment
 
-The current `DB.md` does not yet support every behavior defined in this API. Update the database design before implementation.
+The Core and Telemetry database designs are aligned with the implemented API and
+Alembic migrations.
 
 ### Core Database Changes
 
 1. **Sessions**
-    - Add `client_ip` so the admin can see the client address.
+    - `client_ip` is stored so the admin can see the client address.
 
 2. **Files**
-    - Add `uploaded_at` for file-list sorting.
-    - Add `status` with at least `active` and `deleting`.
+    - `uploaded_at` supports file-list sorting.
+    - `status` supports `active` and `deleting`.
 
 3. **UploadReservations**
-    - Add `status` with `reserved`, `uploading`, and `completed`.
+    - `status` supports `reserved`, `uploading`, and `completed`.
     - Keep completed reservations for 24 hours.
     - Keep the planned `file_id` and use it to return the previous result after a lost HTTP response.
-    - Add the time fields needed to distinguish reservation start expiry, upload activity, and completed-result retention.
-    - Do not remove a reservation after a recoverable upload failure. Return it to `reserved` after file cleanup succeeds.
+    - The time fields distinguish reservation expiry, upload activity, and completed-result retention.
+    - Recoverable upload failures return to `reserved` after file cleanup succeeds.
 
 4. **UserSecrets / TOTP enrollment**
-    - Add a clear enrollment state.
-    - Define how a pending TOTP secret is stored and confirmed.
-    - Define how a short-lived setup token is represented or validated.
+    - `totp_enabled` identifies the enrollment state.
+    - Pending secrets are stored separately and moved to the confirmed field after validation.
+    - Setup tokens are stored as hashes with an expiry timestamp.
 
 5. **Users**
-    - Add `created_at` if the admin user list must return account creation time.
+    - `created_at` is returned by the admin user list.
 
 ### Telemetry Database
 

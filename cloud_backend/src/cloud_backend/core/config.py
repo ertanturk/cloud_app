@@ -5,7 +5,7 @@ Application configuration.
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
@@ -20,6 +20,14 @@ class Config(BaseSettings):
     CORE_DB_URL: SecretStr
     TELEMETRY_DB_URL: SecretStr
     LOG_FILE_PATH: str = "cloud_backend.log"
+
+    @field_validator("STORAGE_BASE_PATH")
+    @classmethod
+    def resolve_storage_base_path(cls, value: str) -> str:
+        path = Path(value).expanduser()
+        if not path.is_absolute():
+            path = BASE_DIR / path
+        return str(path.resolve())
 
     model_config = SettingsConfigDict(
         env_file=ENV_FILE_PATH,

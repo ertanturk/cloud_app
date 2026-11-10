@@ -80,6 +80,7 @@ class MetricsService:
         self._last_net_bytes_sent = net_io.bytes_sent
 
         return SystemMetricsResponse(
+            storage_root=self.storage_root,
             cpu_usage_percent=float(cpu_percent),
             ram_used_bytes=mem.used,
             ram_total_bytes=mem.total,

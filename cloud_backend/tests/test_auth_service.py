@@ -112,6 +112,24 @@ def test_login_issues_access_and_refresh_tokens() -> None:
     )
 
 
+def test_confirm_totp_accepts_sql_server_naive_utc_expiry() -> None:
+    service, user_repo, _, _, telemetry_repo = _service()
+    secret = pyotp.random_base32()
+    user_repo.get_by_setup_token.return_value = SimpleNamespace(
+        user_id=2,
+        pending_totp_secret=encrypt_totp_secret(secret).encode(),
+        totp_setup_expires_at=datetime.now(UTC).replace(tzinfo=None)
+        + timedelta(minutes=5),
+    )
+
+    service.confirm_totp_setup("setup-token", pyotp.TOTP(secret).now(), "127.0.0.1")
+
+    user_repo.confirm_totp.assert_called_once_with(user_id=2)
+    assert telemetry_repo.log_event.call_args.kwargs["event_type_name"] == (
+        "auth.totp.setup.completed"
+    )
+
+
 def test_refresh_reuse_ends_session_and_revokes_tokens() -> None:
     service, _, session_repo, refresh_repo, telemetry_repo = _service()
     token = SimpleNamespace(

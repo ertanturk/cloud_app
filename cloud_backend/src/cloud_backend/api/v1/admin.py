@@ -5,7 +5,8 @@ active session tracking, telemetry audit logs, and hardware/app performance metr
 
 import json
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Response, status
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from cloud_backend.api.v1.dependencies import (
@@ -14,10 +15,16 @@ from cloud_backend.api.v1.dependencies import (
     get_current_admin,
     get_current_session_id,
     get_metrics_service,
+    get_storage_service,
 )
-from cloud_backend.core.exceptions import UserNotFoundError
+from cloud_backend.core.exceptions import (
+    ForbiddenError,
+    UserDeletionBlockedError,
+    UserNotFoundError,
+)
 from cloud_backend.db.connection import get_core_db, get_telemetry_db
 from cloud_backend.db.models import Users
+from cloud_backend.db.models.core import Files, Sessions
 from cloud_backend.db.repositories import (
     FileRepository,
     SessionRepository,
@@ -34,7 +41,7 @@ from cloud_backend.schemas.admin import (
     UserCreateRequest,
     UserResponse,
 )
-from cloud_backend.services import AuthService, MetricsService
+from cloud_backend.services import AuthService, MetricsService, StorageService
 
 router = APIRouter(prefix="/api/v1/admin", tags=["Admin Management"])
 
@@ -96,6 +103,52 @@ def update_user_quota(
         raise UserNotFoundError()
 
     return UserResponse.model_validate(updated_user)
+
+
+@router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_user(
+    user_id: int,
+    current_admin: Users = Depends(get_current_admin),  # noqa
+    core_db: Session = Depends(get_core_db),  # noqa
+) -> Response:
+    """Deletes an unused standard user account."""
+    user_repo = UserRepository(core_db)
+    user = user_repo.get_by_id(user_id)
+    if user is None:
+        raise UserNotFoundError()
+    if user.user_id == current_admin.user_id or user.role == "admin":
+        raise ForbiddenError()
+
+    has_files = core_db.scalar(
+        select(func.count()).select_from(Files).where(Files.user_id == user_id)
+    )
+    has_sessions = core_db.scalar(
+        select(func.count()).select_from(Sessions).where(Sessions.user_id == user_id)
+    )
+    if has_files or has_sessions:
+        raise UserDeletionBlockedError()
+
+    user_repo.delete_user(user)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.delete("/users/{user_id}/force", status_code=status.HTTP_204_NO_CONTENT)
+def force_delete_user(
+    user_id: int,
+    current_admin: Users = Depends(get_current_admin),  # noqa
+    core_db: Session = Depends(get_core_db),  # noqa
+    storage_service: StorageService = Depends(get_storage_service),  # noqa
+) -> Response:
+    """Deletes a standard user and all owned files and records."""
+    user_repo = UserRepository(core_db)
+    user = user_repo.get_by_id(user_id)
+    if user is None:
+        raise UserNotFoundError()
+    if user.user_id == current_admin.user_id or user.role == "admin":
+        raise ForbiddenError()
+
+    user_repo.force_delete_user(user, storage_service)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/sessions", response_model=list[SessionResponse])

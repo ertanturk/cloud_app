@@ -46,6 +46,7 @@ share/python-wheels/
 
 # Logs and Database
 *.log
+logs
 logs/
 *.sqlite
 *.sqlite3

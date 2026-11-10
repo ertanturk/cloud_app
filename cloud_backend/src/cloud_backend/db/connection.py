@@ -5,6 +5,7 @@ Database connection engine and session dependency definitions.
 from collections.abc import Generator
 from typing import Any
 
+from fastapi.exceptions import RequestValidationError
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -58,6 +59,8 @@ def get_core_db() -> Generator[Session, Any, None]:
     db = CoreSessionLocal()
     try:
         yield db
+    except RequestValidationError:
+        raise
     except Exception:
         logger.exception("Core database request failed")
         raise
@@ -73,6 +76,8 @@ def get_telemetry_db() -> Generator[Session, Any, None]:
     db = TelemetrySessionLocal()
     try:
         yield db
+    except RequestValidationError:
+        raise
     except Exception:
         logger.exception("Telemetry database request failed")
         raise

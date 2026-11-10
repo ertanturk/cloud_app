@@ -31,7 +31,7 @@ def provision(
         user="sa",
         password=bootstrap_password,
         database="master",
-        port=port,
+        port=str(port),
         autocommit=True,
     )
     try:
@@ -42,7 +42,8 @@ def provision(
             )
         cursor.execute(  # nosec B608
             "IF NOT EXISTS (SELECT 1 FROM sys.server_principals WHERE name = %s) "
-            f"CREATE LOGIN [{app_user}] WITH PASSWORD = {_literal(app_password)}",  # nosec B608
+            f"BEGIN CREATE LOGIN [{app_user}] WITH PASSWORD = {_literal(app_password)} END "
+            f"ELSE ALTER LOGIN [{app_user}] WITH PASSWORD = {_literal(app_password)}",  # nosec B608
             (app_user,),
         )
         for database in ("CloudCore", "CloudTelemetry"):

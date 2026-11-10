@@ -21,16 +21,19 @@ The `--admin` option does not give admin access. The server checks the user's ro
 ## 3. Authentication
 
 - The client checks the access token first.
-- The client uses the refresh token when the access token expires.
+- The client uses the rotating refresh token when the access token expires.
 - The login screen opens when the refresh token is not valid.
+- Refresh tokens are stored in the Windows keyring for up to 30 days.
+- A successful refresh replaces the stored keyring token with the new token.
 - The login screen asks for a username, password, and 6-digit TOTP code.
-- The server checks the user's role before it opens the Admin Interface.
+- `uv run cloud` opens the user dashboard, including for an admin account.
+- `uv run cloud --admin` requires an admin account before opening the Admin Interface.
 
 ## 4. User Interface
 
 ### Header
 
-- Show the product name: `Cloud Store`.
+- Show the product name: `CloudVault`.
 - Show the connection status.
 - Show only the username.
 - Do not show a `USER` label.
@@ -70,19 +73,25 @@ Show the user's files in a table.
 - Show upload progress during an upload.
 - Show clear success or error messages.
 - Disable Download and Remove when no file is selected.
+- Accept either an existing download directory or an explicit target file path.
+- Verify streamed download completion before reporting success.
 
 ### Keyboard Shortcuts
 
 - `U (Upload)`
 - `D (Download)`
 - `R (Remove)`
+- `L (Logout)`
 - `Q (Quit)`
+
+`Q` exits without clearing the keyring. `L` revokes the refresh-token session,
+clears the keyring, and requires login on the next start.
 
 ## 5. Admin Interface
 
 ### Header
 
-- Show the product name: `Cloud Store`.
+- Show the product name: `CloudVault`.
 - Show the connection status.
 - Show only the admin username.
 - Do not show an `ADMIN` label.
@@ -197,6 +206,13 @@ Display these fields:
 | Created At    | Account creation date |
 
 Allow the admin to update a user's storage quota.
+
+Show the quota editor after a user row is selected. The editor accepts a new quota
+in bytes and enables the update action only for a selected user.
+
+Allow normal deletion only when the user has no files or session history. Provide a
+force-delete action for standard users that removes their physical files and related
+records. Admin accounts and the current admin cannot be deleted.
 
 Do not allow a quota smaller than the user's current storage usage plus active upload reservations.
 

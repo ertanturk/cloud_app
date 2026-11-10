@@ -55,6 +55,7 @@ class TelemetryResponse(BaseModel):
 
 
 class SystemMetricsResponse(BaseModel):
+    storage_root: str
     cpu_usage_percent: float = Field(..., ge=0.0, le=100.0)
     ram_used_bytes: int = Field(..., ge=0)
     ram_total_bytes: int = Field(..., ge=0)

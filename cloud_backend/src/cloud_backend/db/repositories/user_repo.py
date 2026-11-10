@@ -2,13 +2,26 @@
 Repository for User and UserSecrets database operations.
 """
 
+from __future__ import annotations
+
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from cloud_backend.core.app_logging import ProjectLogger
-from cloud_backend.db.models.core import Users, UserSecrets
+from cloud_backend.db.models.core import (
+    Files,
+    RefreshTokens,
+    Sessions,
+    UploadReservations,
+    Users,
+    UserSecrets,
+)
+
+if TYPE_CHECKING:
+    from cloud_backend.services.storage_service import StorageService
 
 logger = ProjectLogger.get_logger(__name__)
 
@@ -143,3 +156,60 @@ class UserRepository:
     def list_users(self) -> list[Users]:
         stmt = select(Users)
         return list(self.db.execute(stmt).scalars().all())
+
+    def delete_user(self, user: Users) -> None:
+        """Deletes a user after callers validate dependent records."""
+        try:
+            self.db.delete(user)
+            self.db.commit()
+        except Exception:
+            logger.exception("Failed to delete user_id=%s", user.user_id)
+            self.db.rollback()
+            raise
+
+    def force_delete_user(self, user: Users, storage: StorageService) -> None:
+        """Deletes a user, dependent records, and all safely-owned physical files."""
+        try:
+            files = list(
+                self.db.scalars(
+                    select(Files).where(Files.user_id == user.user_id)
+                ).all()
+            )
+            for file in files:
+                storage.delete_file(file.storage_path)
+
+            reservations = list(
+                self.db.scalars(
+                    select(UploadReservations).where(
+                        UploadReservations.user_id == user.user_id
+                    )
+                ).all()
+            )
+            for reservation in reservations:
+                storage.delete_file(storage.get_temp_path(reservation.file_id))
+                self.db.delete(reservation)
+
+            sessions = list(
+                self.db.scalars(
+                    select(Sessions).where(Sessions.user_id == user.user_id)
+                ).all()
+            )
+            session_ids = [session.session_id for session in sessions]
+            if session_ids:
+                for token in self.db.scalars(
+                    select(RefreshTokens).where(
+                        RefreshTokens.session_id.in_(session_ids)
+                    )
+                ).all():
+                    self.db.delete(token)
+                for session in sessions:
+                    self.db.delete(session)
+
+            for file in files:
+                self.db.delete(file)
+            self.db.delete(user)
+            self.db.commit()
+        except Exception:
+            logger.exception("Failed to force delete user_id=%s", user.user_id)
+            self.db.rollback()
+            raise
