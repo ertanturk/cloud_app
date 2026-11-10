@@ -275,7 +275,7 @@ This phase prepares a Windows machine and starts the backend before frontend dev
     - If the mutex is already held, report that the backend is running and do not start another copy.
     - Check the API port separately. If another, unrelated process owns it, stop and report the conflict instead of terminating that process.
     - Run Uvicorn with one worker and without reload when using the process-level mutex.
-- [ ] **`cloud_backend/src/cloud_backend/main.py` or health router**
+- [x] **`cloud_backend/src/cloud_backend/main.py` or health router**
     - Provide a lightweight health endpoint if one does not already exist.
     - Verify that the application starts and can reach both databases before reporting readiness.
 - [x] **`cloud_backend/bootstrap/orchestrator.py`**
@@ -298,13 +298,13 @@ This phase prepares a Windows machine and starts the backend before frontend dev
 
 ## Phase 8: Frontend Services & Keyring
 
-- [ ] **`cloud_frontend/src/cloud_frontend/services/auth_manager.py`**
+- [x] **`cloud_frontend/src/cloud_frontend/services/auth_manager.py`**
     - Store JWT Access Token in application memory only.
-- [ ] **`cloud_frontend/src/cloud_frontend/services/keyring_store.py`**
+- [x] **`cloud_frontend/src/cloud_frontend/services/keyring_store.py`**
     - Save and load 30-day Refresh Token from OS Keyring.
-- [ ] **`cloud_frontend/src/cloud_frontend/services/api_client.py`**
+- [x] **`cloud_frontend/src/cloud_frontend/services/api_client.py`**
     - Build HTTP client with `httpx` to send requests and stream files.
-- [ ] **`cloud_frontend/src/cloud_frontend/services/sse_client.py`**
+- [x] **`cloud_frontend/src/cloud_frontend/services/sse_client.py`**
     - Build SSE client with `httpx-sse` for admin live metrics updates.
 
 ---

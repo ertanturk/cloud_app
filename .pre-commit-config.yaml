@@ -25,7 +25,7 @@ repos:
       rev: 1.9.4
       hooks:
           - id: bandit
-            args: ["--exclude", "cloud_backend/tests"]
+            exclude: ^(cloud_backend/tests/|cloud_frontend/tests/)
 
     - repo: local
       hooks:
